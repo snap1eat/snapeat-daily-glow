@@ -22,7 +22,7 @@ interface NutritionGoals {
 
 interface MealLog {
   id: string;
-  type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink';
   foods: Food[];
   timestamp: Date;
 }
@@ -40,6 +40,20 @@ interface Food {
   sugar?: number;
 }
 
+interface HealthData {
+  glycemia?: string;
+  cholesterol?: string;
+  triglycerides?: string;
+  hypertension?: boolean;
+  foodIntolerances?: string;
+  eatingDisorders?: string;
+  digestiveIssues?: string;
+  additionalHealthInfo?: string;
+  familyHypertension?: boolean;
+  familyDiabetes?: boolean;
+  familyCancer?: boolean;
+}
+
 interface DailyLog {
   date: string; // YYYY-MM-DD
   meals: MealLog[];
@@ -54,12 +68,14 @@ interface UserState {
   dailyLogs: DailyLog[];
   currentStreak: number;
   totalEatsPoints: number;
+  healthData?: HealthData;
 }
 
 interface UserContextType {
   user: UserState;
   updateProfile: (profile: Partial<UserProfile>) => void;
   updateNutritionGoals: (goals: Partial<NutritionGoals>) => void;
+  updateHealthData?: (data: Partial<HealthData>) => void;
   logMeal: (meal: MealLog) => void;
   incrementWater: () => void;
   getTodayLog: () => DailyLog;
@@ -67,7 +83,7 @@ interface UserContextType {
   getDailyProtein: () => number;
   getDailyCarbs: () => number;
   getDailyFat: () => number;
-  getTodayMealByType: (type: 'breakfast' | 'lunch' | 'dinner' | 'snack') => MealLog | null;
+  getTodayMealByType: (type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink') => MealLog | null;
 }
 
 // Default values
@@ -178,6 +194,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }));
   };
 
+  // Update health data
+  const updateHealthData = (data: Partial<HealthData>) => {
+    setUser(prev => ({
+      ...prev,
+      healthData: {
+        ...prev.healthData,
+        ...data,
+      },
+    }));
+  };
+
   // Get today's log
   const getTodayLog = (): DailyLog => {
     const today = new Date().toISOString().split('T')[0];
@@ -210,22 +237,31 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const today = new Date().toISOString().split('T')[0];
     const updatedLogs = user.dailyLogs.map(log => {
       if (log.date === today) {
-        // Replace meal if it exists, otherwise add it
-        const existingMealIndex = log.meals.findIndex(m => m.type === meal.type);
-        if (existingMealIndex >= 0) {
-          const updatedMeals = [...log.meals];
-          updatedMeals[existingMealIndex] = meal;
-          return {
-            ...log,
-            meals: updatedMeals,
-            eatsPoints: log.eatsPoints + 10,
-          };
-        } else {
+        // Para snacks y bebidas, permitir múltiples entradas
+        if (meal.type === 'snack' || meal.type === 'drink') {
           return {
             ...log,
             meals: [...log.meals, meal],
             eatsPoints: log.eatsPoints + 10,
           };
+        } else {
+          // Para comidas principales, reemplazar si existe
+          const existingMealIndex = log.meals.findIndex(m => m.type === meal.type);
+          if (existingMealIndex >= 0) {
+            const updatedMeals = [...log.meals];
+            updatedMeals[existingMealIndex] = meal;
+            return {
+              ...log,
+              meals: updatedMeals,
+              eatsPoints: log.eatsPoints + 10,
+            };
+          } else {
+            return {
+              ...log,
+              meals: [...log.meals, meal],
+              eatsPoints: log.eatsPoints + 10,
+            };
+          }
         }
       }
       return log;
@@ -287,8 +323,13 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Get meal by type for today
-  const getTodayMealByType = (type: 'breakfast' | 'lunch' | 'dinner' | 'snack'): MealLog | null => {
+  const getTodayMealByType = (type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink'): MealLog | null => {
     const todayLog = getTodayLog();
+    // Para snacks y bebidas que pueden tener múltiples entradas, devolvemos el último
+    if (type === 'snack' || type === 'drink') {
+      const meals = todayLog.meals.filter(meal => meal.type === type);
+      return meals.length > 0 ? meals[meals.length - 1] : null;
+    }
     return todayLog.meals.find(meal => meal.type === type) || null;
   };
 
@@ -298,6 +339,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         user,
         updateProfile,
         updateNutritionGoals,
+        updateHealthData,
         logMeal,
         incrementWater,
         getTodayLog,

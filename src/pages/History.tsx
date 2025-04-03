@@ -91,7 +91,7 @@ const History = () => {
   const pieChartData = generateMacroData();
 
   return (
-    <div className="pt-16 pb-4">
+    <div className="pt-16 pb-4 px-1">
       <h1 className="text-2xl font-bold mb-6">Historial y Estadísticas</h1>
       
       <Tabs defaultValue="overview">
@@ -106,9 +106,9 @@ const History = () => {
               <CardTitle>Distribución de macronutrientes</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
+              <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                  <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                     <Pie
                       data={pieChartData}
                       cx="50%"
@@ -123,7 +123,7 @@ const History = () => {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Legend />
+                    <Legend verticalAlign="bottom" height={36} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -167,22 +167,26 @@ const History = () => {
             <CardHeader>
               <CardTitle>Tendencias (últimos 7 días)</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
+            <CardContent className="px-0 sm:px-6">
+              <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={lineChartData}>
+                  <LineChart 
+                    data={lineChartData}
+                    margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
                     <Tooltip />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Line 
                       yAxisId="left"
                       type="monotone" 
                       dataKey="calories" 
                       stroke="#FF8042" 
                       name="Calorías"
+                      strokeWidth={2}
                     />
                     <Line 
                       yAxisId="right"
@@ -190,6 +194,7 @@ const History = () => {
                       dataKey="protein" 
                       stroke="#0088FE" 
                       name="Proteínas (g)"
+                      strokeWidth={2}
                     />
                     <Line 
                       yAxisId="right"
@@ -197,6 +202,7 @@ const History = () => {
                       dataKey="carbs" 
                       stroke="#FFBB28" 
                       name="Carbohidratos (g)"
+                      strokeWidth={2}
                     />
                     <Line 
                       yAxisId="right"
@@ -204,24 +210,29 @@ const History = () => {
                       dataKey="fat" 
                       stroke="#00C49F" 
                       name="Grasas (g)"
+                      strokeWidth={2}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
               
-              <div className="h-[200px] mt-8">
+              <div className="h-[200px] mt-8 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={lineChartData}>
+                  <LineChart 
+                    data={lineChartData}
+                    margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis domain={[0, 8]} />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <YAxis domain={[0, 8]} tick={{ fontSize: 12 }} />
                     <Tooltip />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Line 
                       type="monotone" 
                       dataKey="water" 
                       stroke="#0088FE" 
                       name="Vasos de agua"
+                      strokeWidth={2}
                     />
                   </LineChart>
                 </ResponsiveContainer>

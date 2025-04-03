@@ -3,7 +3,7 @@ import { ReactNode } from 'react';
 import TopBar from './TopBar';
 import BottomNav from './BottomNav';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Coffee } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface LayoutProps {
@@ -19,13 +19,18 @@ const Layout = ({ children }: LayoutProps) => {
       <main className="snapeat-container">
         {children}
       </main>
-      <div 
-        className="fixed bottom-24 right-6 z-50"
-        onClick={() => navigate('/food-log')}
-      >
+      <div className="fixed bottom-24 right-6 z-50 flex flex-col space-y-3">
+        <Button 
+          size="lg" 
+          className="h-12 w-12 rounded-full bg-blue-500 hover:bg-blue-600 text-white shadow-lg"
+          onClick={() => navigate('/food-log?type=drink')}
+        >
+          <Coffee className="h-5 w-5" />
+        </Button>
         <Button 
           size="lg" 
           className="h-14 w-14 rounded-full bg-snapeat-orange hover:bg-orange-600 text-white shadow-lg"
+          onClick={() => navigate('/food-log')}
         >
           <Plus className="h-6 w-6" />
         </Button>

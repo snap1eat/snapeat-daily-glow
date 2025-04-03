@@ -1,92 +1,71 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 84 41% 97%;
+    --foreground: 120 5% 20%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 84 41% 97%;
+    --card-foreground: 120 5% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 84 41% 97%;
+    --popover-foreground: 120 5% 20%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 122 67% 31%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 82 65% 44%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 82 33% 92%;
+    --muted-foreground: 120 5% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 48 100% 61%;
+    --accent-foreground: 120 5% 20%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 82 33% 85%;
+    --input: 82 33% 85%;
+    --ring: 122 67% 31%;
 
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --radius: 1rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 120 10% 10%;
+    --foreground: 84 41% 90%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 120 10% 12%;
+    --card-foreground: 84 41% 90%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 120 10% 12%;
+    --popover-foreground: 84 41% 90%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 122 50% 50%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 82 50% 60%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 120 10% 20%;
+    --muted-foreground: 84 41% 70%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 48 80% 50%;
+    --accent-foreground: 120 10% 10%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 120 10% 20%;
+    --input: 120 10% 20%;
+    --ring: 122 50% 50%;
   }
 }
 
@@ -96,6 +75,48 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-snapeat-background text-foreground font-sans;
+  }
+}
+
+@layer components {
+  .snapeat-container {
+    @apply max-w-md mx-auto px-4 pb-20;
+  }
+
+  .meal-indicator {
+    @apply w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300;
+  }
+
+  .meal-indicator-empty {
+    @apply bg-muted text-muted-foreground border border-border;
+  }
+
+  .meal-indicator-filled {
+    @apply bg-primary text-primary-foreground shadow-md;
+  }
+
+  .water-drop {
+    @apply w-8 h-8 rounded-full bg-blue-100 border border-blue-200 transition-all duration-300 flex items-center justify-center;
+  }
+
+  .water-drop-filled {
+    @apply bg-blue-500 text-white border-blue-600;
+  }
+
+  .nav-item {
+    @apply flex flex-col items-center justify-center text-xs font-medium;
+  }
+
+  .nav-item-active {
+    @apply text-primary;
+  }
+
+  .progress-container {
+    @apply h-4 bg-muted rounded-full overflow-hidden;
+  }
+  
+  .progress-bar {
+    @apply h-full animate-progress-fill;
   }
 }

@@ -44,8 +44,7 @@ const Profile = () => {
     digestiveIssues: 'none',
     additionalHealthInfo: '',
     familyHypertension: false,
-    familyDiabetes: false,
-    familyCancer: false
+    familyDiabetes: false
   });
   
   const handleInputChange = (key: string, value: any) => {
@@ -102,7 +101,7 @@ const Profile = () => {
     <div className="pt-16 pb-4">
       <div className="flex flex-col items-center mb-6">
         <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-3">
-          <PineappleMascot size="md" mood={8} />
+          <PineappleMascot size="md" mood={8} showCrown={true} />
         </div>
         <h1 className="text-xl font-bold">{formData.username}</h1>
         <p className="text-muted-foreground">Nivel {Math.floor(user.totalEatsPoints / 50) + 1}</p>
@@ -586,17 +585,6 @@ const Profile = () => {
                       className="h-4 w-4 rounded border-gray-300"
                     />
                     <Label htmlFor="family-diabetes">Diabetes</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="family-cancer"
-                      checked={formData.familyCancer}
-                      onChange={(e) => handleInputChange('familyCancer', e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300"
-                    />
-                    <Label htmlFor="family-cancer">Cáncer</Label>
                   </div>
                 </div>
               </div>

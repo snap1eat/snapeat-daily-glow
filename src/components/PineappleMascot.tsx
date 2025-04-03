@@ -1,16 +1,19 @@
 
 import { cn } from '@/lib/utils';
+import { Crown } from 'lucide-react';
 
 interface PineappleMascotProps {
   mood: number; // 0-10 scale where 10 is the happiest
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  showCrown?: boolean;
 }
 
 export function PineappleMascot({ 
   mood = 5, 
   className,
   size = 'md', 
+  showCrown = false,
 }: PineappleMascotProps) {
   // Scale size based on prop
   const sizeClass = {
@@ -23,31 +26,57 @@ export function PineappleMascot({
   const getEmoji = () => {
     if (mood >= 8) return (
       <div className="relative flex flex-col items-center">
-        <div className="text-yellow-400">👑</div>
+        {showCrown ? (
+          <div className="text-yellow-400 absolute -top-5 left-1/2 transform -translate-x-1/2">
+            <Crown className="h-6 w-6 fill-yellow-400 stroke-amber-600" />
+          </div>
+        ) : (
+          <div className="text-yellow-400">👑</div>
+        )}
         <div className="text-yellow-500">😄</div>
         <div className="text-amber-600">🍍</div>
       </div>
     );
     if (mood >= 6) return (
       <div className="relative flex flex-col items-center">
+        {showCrown && (
+          <div className="text-yellow-400 absolute -top-5 left-1/2 transform -translate-x-1/2">
+            <Crown className="h-6 w-6 fill-yellow-400 stroke-amber-600" />
+          </div>
+        )}
         <div className="text-yellow-500">😊</div>
         <div className="text-amber-600">🍍</div>
       </div>
     );
     if (mood >= 4) return (
       <div className="relative flex flex-col items-center">
+        {showCrown && (
+          <div className="text-yellow-400 absolute -top-5 left-1/2 transform -translate-x-1/2">
+            <Crown className="h-6 w-6 fill-yellow-400 stroke-amber-600" />
+          </div>
+        )}
         <div className="text-yellow-500">😐</div>
         <div className="text-amber-600">🍍</div>
       </div>
     );
     if (mood >= 2) return (
       <div className="relative flex flex-col items-center">
+        {showCrown && (
+          <div className="text-yellow-400 absolute -top-5 left-1/2 transform -translate-x-1/2">
+            <Crown className="h-6 w-6 fill-yellow-400 stroke-amber-600" />
+          </div>
+        )}
         <div className="text-yellow-500">😕</div>
         <div className="text-amber-600">🍍</div>
       </div>
     );
     return (
       <div className="relative flex flex-col items-center">
+        {showCrown && (
+          <div className="text-yellow-400 absolute -top-5 left-1/2 transform -translate-x-1/2">
+            <Crown className="h-6 w-6 fill-yellow-400 stroke-amber-600" />
+          </div>
+        )}
         <div className="text-yellow-500">😢</div>
         <div className="text-amber-600">🍍</div>
       </div>

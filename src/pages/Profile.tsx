@@ -41,7 +41,7 @@ const Profile = () => {
     hypertension: false,
     foodIntolerances: '',
     eatingDisorders: '',
-    digestiveIssues: '',
+    digestiveIssues: 'none',
     additionalHealthInfo: '',
     familyHypertension: false,
     familyDiabetes: false,
@@ -533,14 +533,14 @@ const Profile = () => {
                 <div className="space-y-2">
                   <Label htmlFor="digestive-issues">Trastornos gastrointestinales</Label>
                   <Select 
-                    value={formData.digestiveIssues || ""} 
+                    value={formData.digestiveIssues} 
                     onValueChange={(value) => handleInputChange('digestiveIssues', value)}
                   >
                     <SelectTrigger id="digestive-issues">
                       <SelectValue placeholder="Selecciona si aplica" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Ninguno</SelectItem>
+                      <SelectItem value="none">Ninguno</SelectItem>
                       <SelectItem value="ibs">Colon irritable</SelectItem>
                       <SelectItem value="gastritis">Gastritis</SelectItem>
                       <SelectItem value="gases">Gases</SelectItem>

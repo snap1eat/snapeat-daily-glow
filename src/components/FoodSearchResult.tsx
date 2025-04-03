@@ -20,7 +20,7 @@ export function FoodSearchResult({ food, onAdd }: FoodSearchResultProps) {
       <div>
         <div className="font-medium">{food.name}</div>
         <div className="text-sm text-muted-foreground">
-          {food.calories.toFixed(1)} kcal | P: {food.protein.toFixed(1)}g | C: {food.carbs.toFixed(1)}g | G: {food.fat.toFixed(1)}g
+          {food.calories.toFixed(1)} kcal | P: {food.protein.toFixed(1)}g | C: {food.carbs.toFixed(1)}g | F: {food.fat.toFixed(1)}g
         </div>
       </div>
       <Button variant="ghost" size="sm" onClick={onAdd}>

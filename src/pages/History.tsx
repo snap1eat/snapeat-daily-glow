@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUser } from '@/contexts/UserContext';
+import { Diamond } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
@@ -79,16 +80,39 @@ const History = () => {
       });
     });
     
+    const total = totalProtein + totalCarbs + totalFat;
+    
     return [
-      { name: 'Proteínas', value: totalProtein },
-      { name: 'Carbohidratos', value: totalCarbs },
-      { name: 'Grasas', value: totalFat },
+      { name: 'Proteínas', value: totalProtein, percentage: total > 0 ? Math.round((totalProtein / total) * 100) : 0 },
+      { name: 'Carbohidratos', value: totalCarbs, percentage: total > 0 ? Math.round((totalCarbs / total) * 100) : 0 },
+      { name: 'Grasas', value: totalFat, percentage: total > 0 ? Math.round((totalFat / total) * 100) : 0 },
     ];
   };
 
   // Data for charts
   const lineChartData = calculateAverages();
   const pieChartData = generateMacroData();
+
+  // Custom label for pie chart to show percentages
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }: any) => {
+    const RADIAN = Math.PI / 180;
+    const radius = outerRadius * 0.8;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill="white" 
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+        fontSize={12}
+      >
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
 
   return (
     <div className="pt-16 pb-4 px-1">
@@ -117,7 +141,7 @@ const History = () => {
                       outerRadius={100}
                       fill="#8884d8"
                       dataKey="value"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      label={renderCustomizedLabel}
                     >
                       {pieChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -138,11 +162,17 @@ const History = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-muted p-4 rounded-lg">
                   <div className="text-sm text-muted-foreground">Racha actual</div>
-                  <div className="text-2xl font-bold">{user.currentStreak} días</div>
+                  <div className="text-2xl font-bold flex items-center">
+                    {user.currentStreak}
+                    <span className="text-snapeat-yellow-dark ml-2">👑</span>
+                  </div>
                 </div>
                 <div className="bg-muted p-4 rounded-lg">
-                  <div className="text-sm text-muted-foreground">Puntos EATS</div>
-                  <div className="text-2xl font-bold">{user.totalEatsPoints}</div>
+                  <div className="text-sm text-muted-foreground">EATS</div>
+                  <div className="text-2xl font-bold flex items-center">
+                    {user.totalEatsPoints}
+                    <Diamond className="h-5 w-5 text-purple-500 ml-2" />
+                  </div>
                 </div>
                 <div className="bg-muted p-4 rounded-lg">
                   <div className="text-sm text-muted-foreground">Comidas registradas</div>
@@ -153,7 +183,7 @@ const History = () => {
                 <div className="bg-muted p-4 rounded-lg">
                   <div className="text-sm text-muted-foreground">Promedio de agua</div>
                   <div className="text-2xl font-bold">
-                    {(user.dailyLogs.reduce((total, log) => total + log.waterGlasses, 0) / user.dailyLogs.length).toFixed(1)}
+                    {(user.dailyLogs.reduce((total, log) => total + log.waterGlasses, 0) / Math.max(1, user.dailyLogs.length)).toFixed(1)}
                     <span className="text-sm ml-1">vasos</span>
                   </div>
                 </div>
@@ -167,12 +197,12 @@ const History = () => {
             <CardHeader>
               <CardTitle>Tendencias (últimos 7 días)</CardTitle>
             </CardHeader>
-            <CardContent className="px-0 sm:px-6">
+            <CardContent className="px-2">
               <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart 
                     data={lineChartData}
-                    margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
+                    margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} />
@@ -220,7 +250,7 @@ const History = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart 
                     data={lineChartData}
-                    margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
+                    margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} />

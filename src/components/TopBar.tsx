@@ -1,6 +1,6 @@
 
 import { useUser } from '@/contexts/UserContext';
-import { Lightbulb } from 'lucide-react';
+import { Crown, Lightbulb } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -58,14 +58,8 @@ const TopBar = () => {
         
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
-            {Array.from({ length: Math.min(currentStreak, 7) }).map((_, i) => (
-              <div 
-                key={i} 
-                className="w-6 h-6 flex items-center justify-center"
-              >
-                <span role="img" aria-label="crown" className="text-snapeat-yellow-dark text-lg">👑</span>
-              </div>
-            ))}
+            <Crown className="h-5 w-5 text-snapeat-yellow-dark mr-1" />
+            <span className="font-semibold text-sm">{currentStreak}</span>
           </div>
           
           <button 

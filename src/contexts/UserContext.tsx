@@ -51,7 +51,6 @@ interface HealthData {
   additionalHealthInfo?: string;
   familyHypertension?: boolean;
   familyDiabetes?: boolean;
-  familyCancer?: boolean;
 }
 
 interface DailyLog {

@@ -112,7 +112,7 @@ const Dashboard = () => {
               percentage={caloriePercentage}
               size={120}
               label="Calorías"
-              value={`${totalCalories} / ${user.nutritionGoals.calories}`}
+              value={`${Math.round(totalCalories)} / ${user.nutritionGoals.calories}`}
             />
           </div>
           
@@ -125,7 +125,7 @@ const Dashboard = () => {
                   style={{ '--progress-width': `${proteinPercentage}%` } as React.CSSProperties}
                 ></div>
               </div>
-              <div className="text-xs mt-1">{totalProtein}g / {user.nutritionGoals.protein}g</div>
+              <div className="text-xs mt-1">{totalProtein.toFixed(1)}g / {user.nutritionGoals.protein}g</div>
             </div>
             
             <div className="flex flex-col items-center">
@@ -136,7 +136,7 @@ const Dashboard = () => {
                   style={{ '--progress-width': `${carbsPercentage}%` } as React.CSSProperties} 
                 ></div>
               </div>
-              <div className="text-xs mt-1">{totalCarbs}g / {user.nutritionGoals.carbs}g</div>
+              <div className="text-xs mt-1">{totalCarbs.toFixed(1)}g / {user.nutritionGoals.carbs}g</div>
             </div>
             
             <div className="flex flex-col items-center">
@@ -147,7 +147,7 @@ const Dashboard = () => {
                   style={{ '--progress-width': `${fatPercentage}%` } as React.CSSProperties}
                 ></div>
               </div>
-              <div className="text-xs mt-1">{totalFat}g / {user.nutritionGoals.fat}g</div>
+              <div className="text-xs mt-1">{totalFat.toFixed(1)}g / {user.nutritionGoals.fat}g</div>
             </div>
           </div>
         </CardContent>

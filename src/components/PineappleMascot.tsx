@@ -15,17 +15,43 @@ export function PineappleMascot({
   // Scale size based on prop
   const sizeClass = {
     'sm': 'text-3xl',
-    'md': 'text-5xl',
-    'lg': 'text-7xl',
+    'md': 'text-6xl',
+    'lg': 'text-8xl',
   }[size];
   
   // Choose the right emoji based on mood
   const getEmoji = () => {
-    if (mood >= 8) return '😄🍍'; // Very happy
-    if (mood >= 6) return '🙂🍍'; // Happy
-    if (mood >= 4) return '😐🍍'; // Neutral
-    if (mood >= 2) return '😕🍍'; // Sad
-    return '😢🍍'; // Very sad
+    if (mood >= 8) return (
+      <div className="relative flex flex-col items-center">
+        <div className="text-yellow-400">👑</div>
+        <div className="text-yellow-500">😄</div>
+        <div className="text-amber-600">🍍</div>
+      </div>
+    );
+    if (mood >= 6) return (
+      <div className="relative flex flex-col items-center">
+        <div className="text-yellow-500">😊</div>
+        <div className="text-amber-600">🍍</div>
+      </div>
+    );
+    if (mood >= 4) return (
+      <div className="relative flex flex-col items-center">
+        <div className="text-yellow-500">😐</div>
+        <div className="text-amber-600">🍍</div>
+      </div>
+    );
+    if (mood >= 2) return (
+      <div className="relative flex flex-col items-center">
+        <div className="text-yellow-500">😕</div>
+        <div className="text-amber-600">🍍</div>
+      </div>
+    );
+    return (
+      <div className="relative flex flex-col items-center">
+        <div className="text-yellow-500">😢</div>
+        <div className="text-amber-600">🍍</div>
+      </div>
+    );
   };
   
   // Add animations based on mood

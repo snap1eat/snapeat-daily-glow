@@ -1,3 +1,4 @@
+
 import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { useState } from 'react';
 import { PineappleMascot } from '@/components/PineappleMascot';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const Profile = () => {
   const { user, updateProfile, updateNutritionGoals } = useUser();
@@ -35,6 +37,7 @@ const Profile = () => {
     dietQuality: 3,
     favoriteFood: '',
     dietType: 'balanced',
+    nutritionGoal: 'maintain',
     glycemia: '',
     cholesterol: '',
     triglycerides: '',
@@ -97,11 +100,33 @@ const Profile = () => {
     });
   };
 
+  const getInitials = () => {
+    if (formData.name) {
+      const nameParts = formData.name.split(' ');
+      if (nameParts.length >= 2) {
+        return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
+      }
+      return formData.name.substring(0, 2).toUpperCase();
+    }
+    return formData.username.substring(0, 2).toUpperCase();
+  };
+
   return (
     <div className="pt-16 pb-4">
       <div className="flex flex-col items-center mb-6">
-        <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-3">
-          <PineappleMascot size="md" mood={8} showCrown={true} />
+        <div className="relative mb-3">
+          <Avatar className="w-24 h-24 border-2 border-primary">
+            {user.profile.avatar ? (
+              <AvatarImage src={user.profile.avatar} alt={formData.username} />
+            ) : (
+              <AvatarFallback className="bg-gradient-to-br from-primary/80 to-primary text-lg font-bold">
+                {getInitials()}
+              </AvatarFallback>
+            )}
+          </Avatar>
+          <div className="absolute -top-2 -right-2">
+            <PineappleMascot size="sm" mood={10} showCrown={true} />
+          </div>
         </div>
         <h1 className="text-xl font-bold">{formData.username}</h1>
         <p className="text-muted-foreground">Nivel {Math.floor(user.totalEatsPoints / 50) + 1}</p>
@@ -242,6 +267,28 @@ const Profile = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="nutrition-goal">Mi objetivo principal es</Label>
+                  <Select 
+                    value={formData.nutritionGoal} 
+                    onValueChange={(value) => handleInputChange('nutritionGoal', value)}
+                  >
+                    <SelectTrigger id="nutrition-goal">
+                      <SelectValue placeholder="Selecciona tu objetivo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="muscle_gain">Incrementar mi masa muscular</SelectItem>
+                      <SelectItem value="weight_loss">Bajar de peso</SelectItem>
+                      <SelectItem value="weight_gain">Subir de peso</SelectItem>
+                      <SelectItem value="immune_boost">Fortalecer mi sistema inmune</SelectItem>
+                      <SelectItem value="maintain">Mantener mi peso actual</SelectItem>
+                      <SelectItem value="energy">Aumentar mi energía diaria</SelectItem>
+                      <SelectItem value="performance">Mejorar mi rendimiento deportivo</SelectItem>
+                      <SelectItem value="health">Mejorar mi salud general</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <Label htmlFor="calories">Calorías diarias</Label>
@@ -545,6 +592,7 @@ const Profile = () => {
                       <SelectItem value="gases">Gases</SelectItem>
                       <SelectItem value="constipation">Estreñimiento</SelectItem>
                       <SelectItem value="diarrhea">Diarrea</SelectItem>
+                      <SelectItem value="drink">Bebida</SelectItem>
                       <SelectItem value="other">Otro</SelectItem>
                     </SelectContent>
                   </Select>

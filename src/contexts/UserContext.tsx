@@ -1,477 +1,50 @@
-import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+
+import { createContext, useContext, ReactNode } from 'react';
 import { StorageService } from '../services/storage-service';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Json } from '@/integrations/supabase/types';
+import { 
+  DailyLog, 
+  MealLog, 
+  NutritionGoals, 
+  UserContextType, 
+  UserProfile, 
+  UserSettings,
+  HealthData
+} from '@/types/user';
+import { calculateGoalsBasedOnObjective } from '@/utils/nutritionUtils';
+import useUserData from '@/hooks/useUserData';
+import * as UserService from '@/services/user-service';
 
-interface UserProfile {
-  name: string;
-  age: number;
-  gender: string;
-  weight: number; // in kg
-  height: number; // in cm
-  activityLevel: string;
-  avatar: string;
-  username: string;
-}
-
-interface NutritionGoals {
-  calories: number;
-  protein: number; // in g
-  carbs: number; // in g
-  fat: number; // in g
-}
-
-interface MealLog {
-  id: string;
-  type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink';
-  foods: Food[];
-  timestamp: Date;
-  photo?: string; // Added photo property
-}
-
-interface Food {
-  id: string;
-  name: string;
-  quantity: number; // in g
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  sodium?: number;
-  fiber?: number;
-  sugar?: number;
-}
-
-interface HealthData {
-  glycemia?: string;
-  cholesterol?: string;
-  triglycerides?: string;
-  hypertension?: boolean;
-  foodIntolerances?: string;
-  digestiveIssues?: string;
-  additionalHealthInfo?: string;
-  familyHypertension?: boolean;
-  familyDiabetes?: boolean;
-}
-
-interface DailyLog {
-  date: string; // YYYY-MM-DD
-  meals: MealLog[];
-  waterGlasses: number;
-  streakDay: number;
-  eatsPoints: number;
-}
-
-interface ReminderTimes {
-  breakfast: string;
-  lunch: string;
-  dinner: string;
-  snack: string;
-}
-
-interface UserState {
-  profile: UserProfile;
-  nutritionGoals: NutritionGoals;
-  dailyLogs: DailyLog[];
-  currentStreak: number;
-  totalEatsPoints: number;
-  healthData?: HealthData;
-  settings?: UserSettings; // Added settings
-  isAuthenticated: boolean; // Added authentication status
-  isLoading: boolean; // Added loading state
-}
-
-interface UserSettings {
-  sound: boolean;
-  vibration: boolean;
-  animations: boolean;
-  motivationalMessages: boolean;
-  audioExercises: boolean;
-  email?: string;
-  phone?: string;
-  password?: string;
-  reminderTime?: string;
-  newsNotifications: boolean;
-}
-
-const defaultProfile: UserProfile = {
-  name: '',
-  age: 30,
-  gender: 'no-answer',
-  weight: 70,
-  height: 170,
-  activityLevel: 'moderate',
-  avatar: '',
-  username: 'HealthyPineapple123',
-};
-
-const defaultNutritionGoals: NutritionGoals = {
-  calories: 2000,
-  protein: 100,
-  carbs: 250,
-  fat: 70,
-};
-
-const defaultSettings: UserSettings = {
-  sound: true,
-  vibration: true,
-  animations: true,
-  motivationalMessages: true,
-  audioExercises: false,
-  newsNotifications: true,
-};
-
-interface UserContextType {
-  user: UserState;
-  updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
-  updateNutritionGoals: (goals: Partial<NutritionGoals>) => Promise<void>;
-  updateSettings: (settings: Partial<UserSettings>) => Promise<void>;
-  updateHealthData?: (data: Partial<HealthData>) => Promise<void>;
-  logMeal: (meal: MealLog) => Promise<void>;
-  incrementWater: () => Promise<void>;
-  getTodayLog: () => DailyLog;
-  getDailyCalories: () => number;
-  getDailyProtein: () => number;
-  getDailyCarbs: () => number;
-  getDailyFat: () => number;
-  getTodayMealsByType: (type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink') => MealLog[];
-  calculateGoalsBasedOnObjective: (objective: string) => NutritionGoals;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, profile: Partial<UserProfile>) => Promise<void>;
-  logout: () => Promise<void>;
-}
-
-const UserContext = createContext<UserContextType>({
-  user: {
-    profile: defaultProfile,
-    nutritionGoals: defaultNutritionGoals,
-    dailyLogs: [],
-    currentStreak: 0,
-    totalEatsPoints: 0,
-    settings: defaultSettings,
-    isAuthenticated: false,
-    isLoading: true,
-  },
-  updateProfile: async () => {},
-  updateNutritionGoals: async () => {},
-  updateSettings: async () => {},
-  logMeal: async () => {},
-  incrementWater: async () => {},
-  getTodayLog: () => ({
-    date: new Date().toISOString().split('T')[0],
-    meals: [],
-    waterGlasses: 0,
-    streakDay: 0,
-    eatsPoints: 0,
-  }),
-  getDailyCalories: () => 0,
-  getDailyProtein: () => 0,
-  getDailyCarbs: () => 0,
-  getDailyFat: () => 0,
-  getTodayMealsByType: () => [],
-  calculateGoalsBasedOnObjective: () => defaultNutritionGoals,
-  login: async () => {},
-  signup: async () => {},
-  logout: async () => {},
-});
+const UserContext = createContext<UserContextType>({} as UserContextType);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
-  const [user, setUser] = useState<UserState>({
-    profile: defaultProfile,
-    nutritionGoals: defaultNutritionGoals,
-    dailyLogs: [{
-      date: new Date().toISOString().split('T')[0],
+  const { user, setUser } = useUserData();
+
+  const getTodayLog = (): DailyLog => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayLog = user.dailyLogs.find(log => log.date === today);
+    
+    if (todayLog) {
+      return todayLog;
+    }
+
+    const newLog: DailyLog = {
+      date: today,
       meals: [],
       waterGlasses: 0,
-      streakDay: 1,
+      streakDay: user.currentStreak + 1,
       eatsPoints: 0,
-    }],
-    currentStreak: 1,
-    totalEatsPoints: 0,
-    settings: defaultSettings,
-    isAuthenticated: false,
-    isLoading: true,
-  });
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("Auth state changed:", event, session);
-        setUser(prev => ({
-          ...prev,
-          isAuthenticated: !!session,
-          isLoading: false,
-        }));
-
-        if (session) {
-          fetchUserData(session.user.id);
-        }
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Initial session check:", session);
-      setUser(prev => ({
-        ...prev,
-        isAuthenticated: !!session,
-        isLoading: false,
-      }));
-
-      if (session) {
-        fetchUserData(session.user.id);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
     };
-  }, []);
 
-  const fetchUserData = async (userId: string) => {
-    try {
-      console.log("Fetching user data for:", userId);
-      
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      if (profileError) throw profileError;
-      
-      if (profileData) {
-        const updatedProfile: UserProfile = {
-          name: profileData.display_name || defaultProfile.name,
-          age: profileData.age || defaultProfile.age,
-          gender: profileData.gender || defaultProfile.gender,
-          weight: profileData.weight || defaultProfile.weight,
-          height: profileData.height || defaultProfile.height,
-          activityLevel: profileData.activity_level || defaultProfile.activityLevel,
-          avatar: profileData.avatar_url || defaultProfile.avatar,
-          username: profileData.display_name || defaultProfile.username,
-        };
-        
-        const updatedGoals: NutritionGoals = {
-          calories: profileData.daily_calorie_goal || defaultNutritionGoals.calories,
-          protein: profileData.daily_protein_goal || defaultNutritionGoals.protein,
-          carbs: profileData.daily_carbs_goal || defaultNutritionGoals.carbs,
-          fat: profileData.daily_fats_goal || defaultNutritionGoals.fat,
-        };
-        
-        const { data: settingsData, error: settingsError } = await supabase
-          .from('user_settings')
-          .select('*')
-          .eq('id', userId)
-          .single();
-        
-        if (settingsError && settingsError.code !== 'PGRST116') throw settingsError;
-        
-        const updatedSettings: UserSettings = settingsData ? {
-          sound: settingsData.sound_effects,
-          vibration: settingsData.vibration,
-          animations: settingsData.animations,
-          motivationalMessages: settingsData.motivation_messages,
-          audioExercises: settingsData.audio_exercises,
-          reminderTime: settingsData.reminder_times ? 
-            (typeof settingsData.reminder_times === 'string' 
-              ? JSON.parse(settingsData.reminder_times).breakfast 
-              : (settingsData.reminder_times as any).breakfast) || '08:00' 
-            : '08:00',
-          newsNotifications: settingsData.notification_news,
-        } : defaultSettings;
-        
-        const today = new Date().toISOString().split('T')[0];
-        const { data: logsData, error: logsError } = await supabase
-          .from('daily_logs')
-          .select('*')
-          .eq('user_id', userId)
-          .gte('date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]) // Last 30 days
-          .order('date', { ascending: false });
+    setUser(prev => ({
+      ...prev,
+      dailyLogs: [...prev.dailyLogs, newLog],
+      currentStreak: prev.currentStreak + 1,
+    }));
 
-        if (logsError) throw logsError;
-
-        const { data: mealsData, error: mealsError } = await supabase
-          .from('meals')
-          .select('*, meal_foods(*)')
-          .eq('user_id', userId)
-          .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Last 30 days
-          .order('created_at', { ascending: false });
-
-        if (mealsError) throw mealsError;
-
-        const dailyLogs: DailyLog[] = [];
-        
-        const todayLog: DailyLog = {
-          date: today,
-          meals: [],
-          waterGlasses: 0,
-          streakDay: 1,
-          eatsPoints: 0,
-        };
-        
-        if (logsData && logsData.length > 0) {
-          logsData.forEach(log => {
-            const logDate = log.date;
-            const existingLog = dailyLogs.find(l => l.date === logDate);
-            
-            if (existingLog) {
-              existingLog.waterGlasses = log.water_intake || 0;
-            } else {
-              dailyLogs.push({
-                date: logDate,
-                meals: [],
-                waterGlasses: log.water_intake || 0,
-                streakDay: 0,
-                eatsPoints: 0,
-              });
-            }
-          });
-        }
-        
-        if (!dailyLogs.find(l => l.date === today)) {
-          dailyLogs.push(todayLog);
-        }
-        
-        if (mealsData && mealsData.length > 0) {
-          mealsData.forEach(meal => {
-            const mealDate = new Date(meal.created_at!).toISOString().split('T')[0];
-            const logForDate = dailyLogs.find(l => l.date === mealDate);
-            
-            if (logForDate) {
-              const foods: Food[] = meal.meal_foods.map((food: any) => ({
-                id: food.id,
-                name: food.name,
-                quantity: food.quantity,
-                calories: food.calories,
-                protein: food.protein,
-                carbs: food.carbs,
-                fat: food.fats,
-                sodium: food.sodium,
-                fiber: food.fiber,
-                sugar: food.sugar,
-              }));
-              
-              logForDate.meals.push({
-                id: meal.id,
-                type: meal.meal_type as any,
-                foods,
-                timestamp: new Date(meal.created_at!),
-                photo: meal.image_url || undefined,
-              });
-              
-              logForDate.eatsPoints += 10;
-            }
-          });
-        }
-        
-        let streak = 0;
-        let currentDate = new Date();
-        let consecutiveDays = 0;
-        
-        dailyLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        for (let i = 0; i < 30; i++) {
-          const dateString = currentDate.toISOString().split('T')[0];
-          const logForDate = dailyLogs.find(l => l.date === dateString);
-          
-          if (logForDate && (logForDate.meals.length > 0 || logForDate.waterGlasses > 0)) {
-            consecutiveDays++;
-            logForDate.streakDay = consecutiveDays;
-          } else {
-            break;
-          }
-          
-          currentDate.setDate(currentDate.getDate() - 1);
-        }
-        
-        streak = consecutiveDays;
-        
-        const totalPoints = dailyLogs.reduce((sum, log) => sum + log.eatsPoints, 0);
-        
-        setUser(prev => ({
-          ...prev,
-          profile: updatedProfile,
-          nutritionGoals: updatedGoals,
-          settings: updatedSettings,
-          dailyLogs,
-          currentStreak: streak,
-          totalEatsPoints: totalPoints,
-          isAuthenticated: true,
-          isLoading: false,
-        }));
-        
-        console.log("User data loaded successfully");
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo cargar la información del usuario",
-      });
-      
-      setUser(prev => ({
-        ...prev,
-        isLoading: false,
-      }));
-    }
-  };
-
-  const calculateGoalsBasedOnObjective = (objective: string): NutritionGoals => {
-    const { weight, height, age, gender, activityLevel } = user.profile;
-    let bmr = 0;
-    
-    if (gender === 'male') {
-      bmr = 10 * weight + 6.25 * height - 5 * age + 5;
-    } else {
-      bmr = 10 * weight + 6.25 * height - 5 * age - 161;
-    }
-    
-    let activityMultiplier = 1.2;
-    switch(activityLevel) {
-      case 'light': activityMultiplier = 1.375; break;
-      case 'moderate': activityMultiplier = 1.55; break;
-      case 'active': activityMultiplier = 1.725; break;
-      case 'extra_active': activityMultiplier = 1.9; break;
-    }
-    
-    let calories = Math.round(bmr * activityMultiplier);
-    
-    switch(objective) {
-      case 'weight_loss': calories -= 500; break;
-      case 'weight_gain': calories += 500; break;
-      case 'muscle_gain': calories += 300; break;
-    }
-    
-    let protein = 0;
-    let fat = 0;
-    let carbs = 0;
-    
-    switch(objective) {
-      case 'weight_loss':
-        protein = Math.round(weight * 2.2);
-        fat = Math.round(weight * 0.4);
-        carbs = Math.round((calories - (protein * 4 + fat * 9)) / 4);
-        break;
-      case 'muscle_gain':
-        protein = Math.round(weight * 1.6);
-        fat = Math.round(calories * 0.25 / 9);
-        carbs = Math.round((calories - (protein * 4 + fat * 9)) / 4);
-        break;
-      case 'maintain':
-      default:
-        protein = Math.round(weight * 1.2);
-        fat = Math.round(calories * 0.3 / 9);
-        carbs = Math.round((calories - (protein * 4 + fat * 9)) / 4);
-    }
-    
-    calories = Math.max(1200, calories);
-    protein = Math.max(50, protein);
-    fat = Math.max(30, fat);
-    carbs = Math.max(50, carbs);
-    
-    return { calories, protein, carbs, fat };
+    return newLog;
   };
 
   const updateProfile = async (profile: Partial<UserProfile>) => {
@@ -487,21 +60,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          display_name: profile.name,
-          age: profile.age,
-          gender: profile.gender,
-          weight: profile.weight,
-          height: profile.height,
-          activity_level: profile.activityLevel,
-          avatar_url: profile.avatar,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', await getCurrentUserId());
-      
-      if (error) throw error;
+      const userId = await UserService.getCurrentUserId();
+      await UserService.updateUserProfile(userId, profile);
       
       setUser(prev => ({
         ...prev,
@@ -534,18 +94,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          daily_calorie_goal: goals.calories,
-          daily_protein_goal: goals.protein,
-          daily_carbs_goal: goals.carbs,
-          daily_fats_goal: goals.fat,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', await getCurrentUserId());
-      
-      if (error) throw error;
+      const userId = await UserService.getCurrentUserId();
+      await UserService.updateNutritionGoals(userId, goals);
       
       setUser(prev => ({
         ...prev,
@@ -578,7 +128,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      const userId = await getCurrentUserId();
+      const userId = await UserService.getCurrentUserId();
       
       const { data: existingSettings } = await supabase
         .from('user_settings')
@@ -586,7 +136,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', userId)
         .single();
       
-      let reminderTimes: ReminderTimes = {
+      let reminderTimes = {
         breakfast: '08:00',
         lunch: '13:00',
         dinner: '20:00',
@@ -601,32 +151,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             console.error("Error parsing reminder_times:", e);
           }
         } else {
-          reminderTimes = existingSettings.reminder_times as unknown as ReminderTimes;
+          reminderTimes = existingSettings.reminder_times as unknown as any;
         }
       }
       
-      if (settings.reminderTime) {
-        reminderTimes.breakfast = settings.reminderTime;
-      }
-      
-      const reminderTimesJson = JSON.stringify(reminderTimes) as unknown as Json;
-      
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert({
-          id: userId,
-          sound_effects: settings.sound !== undefined ? settings.sound : user.settings?.sound,
-          vibration: settings.vibration !== undefined ? settings.vibration : user.settings?.vibration,
-          animations: settings.animations !== undefined ? settings.animations : user.settings?.animations,
-          motivation_messages: settings.motivationalMessages !== undefined ? settings.motivationalMessages : user.settings?.motivationalMessages,
-          audio_exercises: settings.audioExercises !== undefined ? settings.audioExercises : user.settings?.audioExercises,
-          notification_reminders: true,
-          notification_news: settings.newsNotifications !== undefined ? settings.newsNotifications : user.settings?.newsNotifications,
-          reminder_times: reminderTimesJson,
-          updated_at: new Date().toISOString(),
-        });
-      
-      if (error) throw error;
+      await UserService.updateUserSettings(userId, settings, reminderTimes);
       
       setUser(prev => ({
         ...prev,
@@ -664,37 +193,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const getCurrentUserId = async (): Promise<string> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("User not authenticated");
-    return user.id;
-  };
-
-  const getTodayLog = (): DailyLog => {
-    const today = new Date().toISOString().split('T')[0];
-    const todayLog = user.dailyLogs.find(log => log.date === today);
-    
-    if (todayLog) {
-      return todayLog;
-    }
-
-    const newLog: DailyLog = {
-      date: today,
-      meals: [],
-      waterGlasses: 0,
-      streakDay: user.currentStreak + 1,
-      eatsPoints: 0,
-    };
-
-    setUser(prev => ({
-      ...prev,
-      dailyLogs: [...prev.dailyLogs, newLog],
-      currentStreak: prev.currentStreak + 1,
-    }));
-
-    return newLog;
-  };
-
   const logMeal = async (meal: MealLog) => {
     try {
       console.log("Logging meal:", meal);
@@ -727,114 +225,25 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      const userId = await getCurrentUserId();
+      const userId = await UserService.getCurrentUserId();
       
+      // Save meal to database
+      const mealData = await UserService.saveMeal(userId, meal);
+      
+      // Update daily log with new nutrition totals
       const totalCalories = meal.foods.reduce((sum, food) => sum + food.calories, 0);
       const totalProtein = meal.foods.reduce((sum, food) => sum + food.protein, 0);
       const totalCarbs = meal.foods.reduce((sum, food) => sum + food.carbs, 0);
       const totalFats = meal.foods.reduce((sum, food) => sum + food.fat, 0);
-      const totalFiber = meal.foods.reduce((sum, food) => sum + (food.fiber || 0), 0);
-      const totalSodium = meal.foods.reduce((sum, food) => sum + (food.sodium || 0), 0);
-      const totalSugar = meal.foods.reduce((sum, food) => sum + (food.sugar || 0), 0);
-      const totalQuantity = meal.foods.reduce((sum, food) => sum + food.quantity, 0);
       
-      const { data: mealData, error: mealError } = await supabase
-        .from('meals')
-        .insert({
-          user_id: userId,
-          meal_type: meal.type,
-          total_quantity: totalQuantity,
-          total_calories: totalCalories,
-          total_protein: totalProtein,
-          total_carbs: totalCarbs,
-          total_fats: totalFats,
-          total_fiber: totalFiber,
-          total_sodium: totalSodium,
-          total_sugar: totalSugar,
-          image_url: meal.photo,
-          input_method: 'manual',
-          created_at: meal.timestamp.toISOString(),
-        })
-        .select()
-        .single();
+      await UserService.updateDailyLog(userId, today, {
+        total_calories: totalCalories,
+        total_protein: totalProtein,
+        total_carbs: totalCarbs,
+        total_fats: totalFats,
+      });
       
-      if (mealError) {
-        console.error("Error inserting meal:", mealError);
-        throw mealError;
-      }
-      
-      const mealFoods = meal.foods.map(food => ({
-        meal_id: mealData.id,
-        food_item_id: food.id,
-        name: food.name,
-        quantity: food.quantity,
-        calories: food.calories,
-        protein: food.protein,
-        carbs: food.carbs,
-        fats: food.fat,
-        fiber: food.fiber,
-        sodium: food.sodium,
-        sugar: food.sugar,
-      }));
-      
-      const { error: foodsError } = await supabase
-        .from('meal_foods')
-        .insert(mealFoods);
-      
-      if (foodsError) {
-        console.error("Error inserting meal foods:", foodsError);
-        throw foodsError;
-      }
-      
-      const { data: existingLog, error: logCheckError } = await supabase
-        .from('daily_logs')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('date', today)
-        .maybeSingle();
-      
-      if (logCheckError && logCheckError.code !== 'PGRST116') {
-        console.error("Error checking daily log:", logCheckError);
-        throw logCheckError;
-      }
-      
-      if (!existingLog) {
-        console.log("Creating new daily log for", today);
-        const { error: createLogError } = await supabase
-          .from('daily_logs')
-          .insert({
-            user_id: userId,
-            date: today,
-            total_calories: totalCalories,
-            total_protein: totalProtein,
-            total_carbs: totalCarbs,
-            total_fats: totalFats,
-            water_intake: 0,
-          });
-        
-        if (createLogError) {
-          console.error("Error creating daily log:", createLogError);
-          throw createLogError;
-        }
-      } else {
-        console.log("Updating existing daily log for", today);
-        const { error: updateLogError } = await supabase
-          .from('daily_logs')
-          .update({
-            total_calories: (existingLog.total_calories || 0) + totalCalories,
-            total_protein: (existingLog.total_protein || 0) + totalProtein,
-            total_carbs: (existingLog.total_carbs || 0) + totalCarbs,
-            total_fats: (existingLog.total_fats || 0) + totalFats,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existingLog.id);
-        
-        if (updateLogError) {
-          console.error("Error updating daily log:", updateLogError);
-          throw updateLogError;
-        }
-      }
-      
+      // Update local state
       const updatedLogs = user.dailyLogs.map(log => {
         if (log.date === today) {
           return {
@@ -888,7 +297,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      const userId = await getCurrentUserId();
+      const userId = await UserService.getCurrentUserId();
       
       const { data: logData, error: logError } = await supabase
         .from('daily_logs')
@@ -902,31 +311,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const currentWaterIntake = logData?.water_intake || 0;
       const newWaterIntake = Math.min(currentWaterIntake + 1, 8);
       
-      if (logData) {
-        const { error: updateError } = await supabase
-          .from('daily_logs')
-          .update({
-            water_intake: newWaterIntake,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', logData.id);
-        
-        if (updateError) throw updateError;
-      } else {
-        const { error: createError } = await supabase
-          .from('daily_logs')
-          .insert({
-            user_id: userId,
-            date: today,
-            water_intake: newWaterIntake,
-            total_calories: 0,
-            total_protein: 0,
-            total_carbs: 0,
-            total_fats: 0,
-          });
-        
-        if (createError) throw createError;
-      }
+      await UserService.updateWaterIntake(userId, today, newWaterIntake);
       
       const updatedLogs = user.dailyLogs.map(log => {
         if (log.date === today) {
@@ -1038,8 +423,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       
       setUser({
-        profile: defaultProfile,
-        nutritionGoals: defaultNutritionGoals,
+        profile: user.profile,
+        nutritionGoals: user.nutritionGoals,
         dailyLogs: [{
           date: new Date().toISOString().split('T')[0],
           meals: [],
@@ -1049,7 +434,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         }],
         currentStreak: 1,
         totalEatsPoints: 0,
-        settings: defaultSettings,
+        settings: user.settings,
         isAuthenticated: false,
         isLoading: false,
       });
@@ -1085,7 +470,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         getDailyCarbs,
         getDailyFat,
         getTodayMealsByType,
-        calculateGoalsBasedOnObjective,
+        calculateGoalsBasedOnObjective: (objective) => calculateGoalsBasedOnObjective(user.profile, objective),
         login,
         signup,
         logout,

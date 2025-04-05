@@ -266,7 +266,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           animations: settingsData.animations,
           motivationalMessages: settingsData.motivation_messages,
           audioExercises: settingsData.audio_exercises,
-          reminderTime: settingsData.reminder_times?.breakfast || '08:00',
+          reminderTime: settingsData.reminder_times ? 
+            (typeof settingsData.reminder_times === 'string' 
+              ? JSON.parse(settingsData.reminder_times).breakfast 
+              : (settingsData.reminder_times as any).breakfast) || '08:00' 
+            : '08:00',
           newsNotifications: settingsData.notification_news,
         } : defaultSettings;
         
@@ -456,12 +460,24 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', userId)
         .single();
       
-      const reminderTimes = existingSettings?.reminder_times || {
+      let reminderTimes: ReminderTimes = {
         breakfast: '08:00',
         lunch: '13:00',
         dinner: '20:00',
         snack: '11:00'
       };
+      
+      if (existingSettings?.reminder_times) {
+        if (typeof existingSettings.reminder_times === 'string') {
+          try {
+            reminderTimes = JSON.parse(existingSettings.reminder_times);
+          } catch (e) {
+            console.error("Error parsing reminder_times:", e);
+          }
+        } else {
+          reminderTimes = existingSettings.reminder_times as unknown as ReminderTimes;
+        }
+      }
       
       if (settings.reminderTime) {
         reminderTimes.breakfast = settings.reminderTime;

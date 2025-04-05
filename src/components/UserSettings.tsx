@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -47,6 +47,24 @@ export const UserSettings = ({ open, onClose }: { open: boolean, onClose: () => 
     newsNotifications: user.settings?.newsNotifications ?? true
   });
 
+  // Update form data when user settings change
+  useEffect(() => {
+    setFormData({
+      name: user.profile.name || '',
+      email: user.settings?.email || '',
+      phone: user.settings?.phone || '',
+      password: user.settings?.password || '',
+      confirmPassword: '',
+      sound: user.settings?.sound ?? true,
+      vibration: user.settings?.vibration ?? true,
+      animations: user.settings?.animations ?? true,
+      motivationalMessages: user.settings?.motivationalMessages ?? true,
+      audioExercises: user.settings?.audioExercises ?? false,
+      reminderTime: user.settings?.reminderTime || '08:00',
+      newsNotifications: user.settings?.newsNotifications ?? true
+    });
+  }, [user.settings, user.profile]);
+
   const handleInputChange = (key: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -54,8 +72,8 @@ export const UserSettings = ({ open, onClose }: { open: boolean, onClose: () => 
     }));
   };
 
-  const handleSaveSettings = () => {
-    updateSettings({
+  const handleSaveSettings = async () => {
+    await updateSettings({
       email: formData.email,
       phone: formData.phone,
       password: formData.password,
@@ -76,9 +94,9 @@ export const UserSettings = ({ open, onClose }: { open: boolean, onClose: () => 
     onClose();
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     // In a real app, this would call an API to delete the account
-    logout();
+    await logout();
     toast({
       title: "Cuenta eliminada",
       description: "Tu cuenta ha sido eliminada permanentemente."
@@ -87,8 +105,8 @@ export const UserSettings = ({ open, onClose }: { open: boolean, onClose: () => 
     navigate('/');
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     toast({
       description: "Has cerrado sesión correctamente."
     });

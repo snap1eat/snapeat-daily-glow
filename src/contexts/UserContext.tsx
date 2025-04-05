@@ -1,3 +1,4 @@
+
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { StorageService } from '../services/storage-service';
 import { supabase } from '@/integrations/supabase/client';
@@ -700,6 +701,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }
       
       const userId = await getCurrentUserId();
+      const today = new Date().toISOString().split('T')[0];
       
       const { data: logData, error: logError } = await supabase
         .from('daily_logs')

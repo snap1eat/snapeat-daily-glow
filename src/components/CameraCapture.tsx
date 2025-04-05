@@ -1,6 +1,6 @@
 
 import { useRef, useState, useEffect } from 'react';
-import { Camera, CameraResultType } from '@capacitor/camera';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Camera as CameraIcon, X, Image as ImageIcon } from 'lucide-react';
@@ -36,7 +36,7 @@ export const CameraCapture = ({ onCapture, open, onOpenChange }: CameraCapturePr
         quality: 90,
         allowEditing: true,
         resultType: CameraResultType.DataUrl,
-        source: 'PHOTOS'
+        source: CameraSource.Photos
       });
       
       if (image.dataUrl) {

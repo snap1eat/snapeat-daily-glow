@@ -13,7 +13,7 @@ import Layout from "./components/Layout";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { SplashScreen } from '@capacitor/splash-screen';
-import { StatusBar } from '@capacitor/status-bar';
+import { StatusBar, Style } from '@capacitor/status-bar';
 import { App as CapApp } from '@capacitor/app';
 import { usePushNotifications } from "./hooks/use-push-notifications";
 
@@ -29,7 +29,7 @@ const AppInit = () => {
       if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
           // Configurar la barra de estado
-          await StatusBar.setStyle({ style: 'LIGHT' });
+          await StatusBar.setStyle({ style: Style.Light });
           await StatusBar.setBackgroundColor({ color: '#82BF45' });
           
           // Ocultar la pantalla de splash después de cargarse

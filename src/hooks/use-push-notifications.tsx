@@ -1,6 +1,6 @@
 
-import { PushNotifications } from '@capacitor/push-notifications';
 import { useEffect, useState } from 'react';
+import { PushNotifications } from '@capacitor/push-notifications';
 import { useToast } from './use-toast';
 
 export function usePushNotifications() {

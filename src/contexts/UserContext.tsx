@@ -45,7 +45,6 @@ interface HealthData {
   triglycerides?: string;
   hypertension?: boolean;
   foodIntolerances?: string;
-  eatingDisorders?: string;
   digestiveIssues?: string;
   additionalHealthInfo?: string;
   familyHypertension?: boolean;

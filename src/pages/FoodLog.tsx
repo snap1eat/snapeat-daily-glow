@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -137,6 +136,7 @@ const FoodLog = () => {
       sugar: food.sugar * (quantity / 100),
     }));
 
+    // Save meal with current timestamp
     logMeal({
       id: uuidv4(),
       type: mealType,

@@ -1,4 +1,3 @@
-
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { StorageService } from '../services/storage-service';
 import { supabase } from '@/integrations/supabase/client';
@@ -94,26 +93,6 @@ interface UserSettings {
   password?: string;
   reminderTime?: string;
   newsNotifications: boolean;
-}
-
-interface UserContextType {
-  user: UserState;
-  updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
-  updateNutritionGoals: (goals: Partial<NutritionGoals>) => Promise<void>;
-  updateHealthData?: (data: Partial<HealthData>) => Promise<void>;
-  updateSettings: (settings: Partial<UserSettings>) => Promise<void>;
-  logMeal: (meal: MealLog) => Promise<void>;
-  incrementWater: () => Promise<void>;
-  getTodayLog: () => DailyLog;
-  getDailyCalories: () => number;
-  getDailyProtein: () => number;
-  getDailyCarbs: () => number;
-  getDailyFat: () => number;
-  getTodayMealsByType: (type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink') => MealLog[];
-  calculateGoalsBasedOnObjective: (objective: string) => NutritionGoals;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, profile: Partial<UserProfile>) => Promise<void>;
-  logout: () => Promise<void>;
 }
 
 const defaultProfile: UserProfile = {
@@ -283,11 +262,124 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           newsNotifications: settingsData.notification_news,
         } : defaultSettings;
         
+        const today = new Date().toISOString().split('T')[0];
+        const { data: logsData, error: logsError } = await supabase
+          .from('daily_logs')
+          .select('*')
+          .eq('user_id', userId)
+          .gte('date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]) // Last 30 days
+          .order('date', { ascending: false });
+
+        if (logsError) throw logsError;
+
+        const { data: mealsData, error: mealsError } = await supabase
+          .from('meals')
+          .select('*, meal_foods(*)')
+          .eq('user_id', userId)
+          .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Last 30 days
+          .order('created_at', { ascending: false });
+
+        if (mealsError) throw mealsError;
+
+        const dailyLogs: DailyLog[] = [];
+        
+        const todayLog: DailyLog = {
+          date: today,
+          meals: [],
+          waterGlasses: 0,
+          streakDay: 1,
+          eatsPoints: 0,
+        };
+        
+        if (logsData && logsData.length > 0) {
+          logsData.forEach(log => {
+            const logDate = log.date;
+            const existingLog = dailyLogs.find(l => l.date === logDate);
+            
+            if (existingLog) {
+              existingLog.waterGlasses = log.water_intake || 0;
+            } else {
+              dailyLogs.push({
+                date: logDate,
+                meals: [],
+                waterGlasses: log.water_intake || 0,
+                streakDay: 0,
+                eatsPoints: 0,
+              });
+            }
+          });
+        }
+        
+        if (!dailyLogs.find(l => l.date === today)) {
+          dailyLogs.push(todayLog);
+        }
+        
+        if (mealsData && mealsData.length > 0) {
+          mealsData.forEach(meal => {
+            const mealDate = new Date(meal.created_at!).toISOString().split('T')[0];
+            const logForDate = dailyLogs.find(l => l.date === mealDate);
+            
+            if (logForDate) {
+              const foods: Food[] = meal.meal_foods.map((food: any) => ({
+                id: food.id,
+                name: food.name,
+                quantity: food.quantity,
+                calories: food.calories,
+                protein: food.protein,
+                carbs: food.carbs,
+                fat: food.fats,
+                sodium: food.sodium,
+                fiber: food.fiber,
+                sugar: food.sugar,
+              }));
+              
+              logForDate.meals.push({
+                id: meal.id,
+                type: meal.meal_type as any,
+                foods,
+                timestamp: new Date(meal.created_at!),
+                photo: meal.image_url || undefined,
+              });
+              
+              logForDate.eatsPoints += 10;
+            }
+          });
+        }
+        
+        let streak = 0;
+        let currentDate = new Date();
+        let consecutiveDays = 0;
+        
+        dailyLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        for (let i = 0; i < 30; i++) {
+          const dateString = currentDate.toISOString().split('T')[0];
+          const logForDate = dailyLogs.find(l => l.date === dateString);
+          
+          if (logForDate && (logForDate.meals.length > 0 || logForDate.waterGlasses > 0)) {
+            consecutiveDays++;
+            logForDate.streakDay = consecutiveDays;
+          } else {
+            break;
+          }
+          
+          currentDate.setDate(currentDate.getDate() - 1);
+        }
+        
+        streak = consecutiveDays;
+        
+        const totalPoints = dailyLogs.reduce((sum, log) => sum + log.eatsPoints, 0);
+        
         setUser(prev => ({
           ...prev,
           profile: updatedProfile,
           nutritionGoals: updatedGoals,
           settings: updatedSettings,
+          dailyLogs,
+          currentStreak: streak,
+          totalEatsPoints: totalPoints,
+          isAuthenticated: true,
+          isLoading: false,
         }));
         
         console.log("User data loaded successfully");
@@ -298,6 +390,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         title: "Error",
         description: "No se pudo cargar la información del usuario",
       });
+      
+      setUser(prev => ({
+        ...prev,
+        isLoading: false,
+      }));
     }
   };
 
@@ -492,6 +589,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         reminderTimes.breakfast = settings.reminderTime;
       }
       
+      const reminderTimesJson = JSON.stringify(reminderTimes) as unknown as Json;
+      
       const { error } = await supabase
         .from('user_settings')
         .upsert({
@@ -503,7 +602,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           audio_exercises: settings.audioExercises !== undefined ? settings.audioExercises : user.settings?.audioExercises,
           notification_reminders: true,
           notification_news: settings.newsNotifications !== undefined ? settings.newsNotifications : user.settings?.newsNotifications,
-          reminder_times: JSON.stringify(reminderTimes) as unknown as Json,
+          reminder_times: reminderTimesJson,
           updated_at: new Date().toISOString(),
         });
       
@@ -578,14 +677,18 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   const logMeal = async (meal: MealLog) => {
     try {
+      console.log("Logging meal:", meal);
+      
+      const today = new Date().toISOString().split('T')[0];
+      let pointsEarned = 10;
+      
       if (!user.isAuthenticated) {
-        const today = new Date().toISOString().split('T')[0];
         const updatedLogs = user.dailyLogs.map(log => {
           if (log.date === today) {
             return {
               ...log,
               meals: [...log.meals, meal],
-              eatsPoints: log.eatsPoints + 10,
+              eatsPoints: log.eatsPoints + pointsEarned,
             };
           }
           return log;
@@ -594,8 +697,13 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         setUser(prev => ({
           ...prev,
           dailyLogs: updatedLogs,
-          totalEatsPoints: prev.totalEatsPoints + 10,
+          totalEatsPoints: prev.totalEatsPoints + pointsEarned,
         }));
+        
+        const userData = { ...user, dailyLogs: updatedLogs, totalEatsPoints: user.totalEatsPoints + pointsEarned };
+        StorageService.set('snapeat_user', JSON.stringify(userData));
+        
+        console.log("Meal logged locally");
         return;
       }
       
@@ -625,14 +733,18 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           total_sugar: totalSugar,
           image_url: meal.photo,
           input_method: 'manual',
+          created_at: meal.timestamp.toISOString(),
         })
         .select()
         .single();
       
-      if (mealError) throw mealError;
+      if (mealError) {
+        console.error("Error inserting meal:", mealError);
+        throw mealError;
+      }
       
       const mealFoods = meal.foods.map(food => ({
-        meal_id: mealData?.id,
+        meal_id: mealData.id,
         food_item_id: food.id,
         name: food.name,
         quantity: food.quantity,
@@ -649,15 +761,66 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         .from('meal_foods')
         .insert(mealFoods);
       
-      if (foodsError) throw foodsError;
+      if (foodsError) {
+        console.error("Error inserting meal foods:", foodsError);
+        throw foodsError;
+      }
       
-      const today = new Date().toISOString().split('T')[0];
+      const { data: existingLog, error: logCheckError } = await supabase
+        .from('daily_logs')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('date', today)
+        .maybeSingle();
+      
+      if (logCheckError && logCheckError.code !== 'PGRST116') {
+        console.error("Error checking daily log:", logCheckError);
+        throw logCheckError;
+      }
+      
+      if (!existingLog) {
+        console.log("Creating new daily log for", today);
+        const { error: createLogError } = await supabase
+          .from('daily_logs')
+          .insert({
+            user_id: userId,
+            date: today,
+            total_calories: totalCalories,
+            total_protein: totalProtein,
+            total_carbs: totalCarbs,
+            total_fats: totalFats,
+            water_intake: 0,
+          });
+        
+        if (createLogError) {
+          console.error("Error creating daily log:", createLogError);
+          throw createLogError;
+        }
+      } else {
+        console.log("Updating existing daily log for", today);
+        const { error: updateLogError } = await supabase
+          .from('daily_logs')
+          .update({
+            total_calories: (existingLog.total_calories || 0) + totalCalories,
+            total_protein: (existingLog.total_protein || 0) + totalProtein,
+            total_carbs: (existingLog.total_carbs || 0) + totalCarbs,
+            total_fats: (existingLog.total_fats || 0) + totalFats,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingLog.id);
+        
+        if (updateLogError) {
+          console.error("Error updating daily log:", updateLogError);
+          throw updateLogError;
+        }
+      }
+      
       const updatedLogs = user.dailyLogs.map(log => {
         if (log.date === today) {
           return {
             ...log,
-            meals: [...log.meals, meal],
-            eatsPoints: log.eatsPoints + 10,
+            meals: [...log.meals, { ...meal, id: mealData.id }],
+            eatsPoints: log.eatsPoints + pointsEarned,
           };
         }
         return log;
@@ -666,10 +829,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       setUser(prev => ({
         ...prev,
         dailyLogs: updatedLogs,
-        totalEatsPoints: prev.totalEatsPoints + 10,
+        totalEatsPoints: prev.totalEatsPoints + pointsEarned,
       }));
       
-      console.log("Meal logged successfully");
+      console.log("Meal logged successfully, state updated");
     } catch (error) {
       console.error("Error logging meal:", error);
       toast({
@@ -681,8 +844,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   const incrementWater = async () => {
     try {
+      const today = new Date().toISOString().split('T')[0];
+      
       if (!user.isAuthenticated) {
-        const today = new Date().toISOString().split('T')[0];
         const updatedLogs = user.dailyLogs.map(log => {
           if (log.date === today) {
             return {
@@ -697,34 +861,52 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           ...prev,
           dailyLogs: updatedLogs,
         }));
+        
+        const userData = { ...user, dailyLogs: updatedLogs };
+        StorageService.set('snapeat_user', JSON.stringify(userData));
+        
         return;
       }
       
       const userId = await getCurrentUserId();
-      const today = new Date().toISOString().split('T')[0];
       
       const { data: logData, error: logError } = await supabase
         .from('daily_logs')
         .select('*')
         .eq('user_id', userId)
         .eq('date', today)
-        .single();
+        .maybeSingle();
       
       if (logError && logError.code !== 'PGRST116') throw logError;
       
       const currentWaterIntake = logData?.water_intake || 0;
       const newWaterIntake = Math.min(currentWaterIntake + 1, 8);
       
-      const { error: updateError } = await supabase
-        .from('daily_logs')
-        .upsert({
-          user_id: userId,
-          date: today,
-          water_intake: newWaterIntake,
-          updated_at: new Date().toISOString(),
-        });
-      
-      if (updateError) throw updateError;
+      if (logData) {
+        const { error: updateError } = await supabase
+          .from('daily_logs')
+          .update({
+            water_intake: newWaterIntake,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', logData.id);
+        
+        if (updateError) throw updateError;
+      } else {
+        const { error: createError } = await supabase
+          .from('daily_logs')
+          .insert({
+            user_id: userId,
+            date: today,
+            water_intake: newWaterIntake,
+            total_calories: 0,
+            total_protein: 0,
+            total_carbs: 0,
+            total_fats: 0,
+          });
+        
+        if (createError) throw createError;
+      }
       
       const updatedLogs = user.dailyLogs.map(log => {
         if (log.date === today) {

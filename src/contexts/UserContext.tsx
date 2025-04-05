@@ -62,6 +62,13 @@ interface DailyLog {
   eatsPoints: number;
 }
 
+interface ReminderTimes {
+  breakfast: string;
+  lunch: string;
+  dinner: string;
+  snack: string;
+}
+
 interface UserState {
   profile: UserProfile;
   nutritionGoals: NutritionGoals;

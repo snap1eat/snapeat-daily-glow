@@ -1,4 +1,5 @@
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { StorageService } from '../services/storage-service';
 
 // Define types for our context data
 interface UserProfile {
@@ -131,24 +132,9 @@ const UserContext = createContext<UserContextType>({
 
 // Provider component
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  // Initialize state from localStorage if available
+  // Initialize state from Storage if available
   const [user, setUser] = useState<UserState>(() => {
-    const savedUser = localStorage.getItem('snapeat_user');
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      // Make sure we parse dates correctly from localStorage
-      if (parsedUser.dailyLogs) {
-        parsedUser.dailyLogs.forEach((log: DailyLog) => {
-          if (log.meals) {
-            log.meals.forEach((meal: MealLog) => {
-              meal.timestamp = new Date(meal.timestamp);
-            });
-          }
-        });
-      }
-      return parsedUser;
-    }
-    
+    // Default values, will be overridden if stored data exists
     return {
       profile: defaultProfile,
       nutritionGoals: defaultNutritionGoals,
@@ -164,10 +150,74 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     };
   });
 
-  // Save to localStorage whenever user state changes
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load data from Storage on component mount
   useEffect(() => {
-    localStorage.setItem('snapeat_user', JSON.stringify(user));
-  }, [user]);
+    const loadData = async () => {
+      try {
+        // Try to get data from Capacitor Storage
+        const storedUser = await StorageService.get<UserState>('snapeat_user');
+        
+        if (storedUser) {
+          // Make sure we parse dates correctly from Storage
+          if (storedUser.dailyLogs) {
+            storedUser.dailyLogs.forEach((log: DailyLog) => {
+              if (log.meals) {
+                log.meals.forEach((meal: MealLog) => {
+                  meal.timestamp = new Date(meal.timestamp);
+                });
+              }
+            });
+          }
+          setUser(storedUser);
+        } else {
+          // If no data in Capacitor Storage, try from localStorage for web version
+          const localStorageUser = localStorage.getItem('snapeat_user');
+          if (localStorageUser) {
+            const parsedUser = JSON.parse(localStorageUser);
+            // Make sure we parse dates correctly
+            if (parsedUser.dailyLogs) {
+              parsedUser.dailyLogs.forEach((log: DailyLog) => {
+                if (log.meals) {
+                  log.meals.forEach((meal: MealLog) => {
+                    meal.timestamp = new Date(meal.timestamp);
+                  });
+                }
+              });
+            }
+            setUser(parsedUser);
+            
+            // Also save to Capacitor Storage for consistency
+            await StorageService.set('snapeat_user', parsedUser);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Save to Storage whenever user state changes
+  useEffect(() => {
+    if (!isLoading) {
+      const saveData = async () => {
+        try {
+          await StorageService.set('snapeat_user', user);
+          // Also save to localStorage for web version
+          localStorage.setItem('snapeat_user', JSON.stringify(user));
+        } catch (error) {
+          console.error('Error saving user data:', error);
+        }
+      };
+
+      saveData();
+    }
+  }, [user, isLoading]);
 
   // Update user profile
   const updateProfile = (profile: Partial<UserProfile>) => {
@@ -347,7 +397,16 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         getTodayMealByType,
       }}
     >
-      {children}
+      {isLoading ? (
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-snapeat-green mx-auto"></div>
+            <p className="mt-4 text-snapeat-green">Cargando...</p>
+          </div>
+        </div>
+      ) : (
+        children
+      )}
     </UserContext.Provider>
   );
 };

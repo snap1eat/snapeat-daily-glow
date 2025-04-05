@@ -72,10 +72,23 @@
 @layer base {
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    @apply bg-snapeat-background text-foreground font-sans;
+    @apply bg-snapeat-background text-foreground font-sans overscroll-none;
+    touch-action: manipulation;
+  }
+  
+  input, textarea, select, button {
+    @apply text-base;
+    font-size: 16px; /* Evita el zoom en iOS */
+  }
+  
+  /* Mejorar la experiencia táctil */
+  button, a, [role="button"] {
+    @apply cursor-pointer;
+    touch-action: manipulation;
   }
 }
 
@@ -119,4 +132,96 @@
   .progress-bar {
     @apply h-full animate-progress-fill;
   }
+  
+  /* Animaciones para gestos táctiles */
+  .page-transition-enter {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  
+  .page-transition-enter-active {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  .page-transition-exit {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  
+  .page-transition-exit-active {
+    opacity: 0;
+    transform: translateX(-100%);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  /* Ajustes para dispositivos móviles */
+  @media (max-width: 768px) {
+    .snapeat-container {
+      @apply px-3;
+    }
+    
+    .card {
+      @apply rounded-lg shadow-sm;
+    }
+    
+    /* Botones más grandes en móvil para mejor experiencia táctil */
+    .touch-target {
+      @apply min-h-12 min-w-12;
+    }
+  }
+  
+  /* Efecto de toque para elementos interactivos */
+  .touch-feedback {
+    @apply transition-opacity active:opacity-70;
+  }
+}
+
+/* Animación de agua */
+@keyframes progress-fill {
+  from { width: 0; }
+  to { width: var(--progress-width, 0); }
+}
+
+/* Animación de agua */
+@keyframes water-fill {
+  from { height: 0; }
+  to { height: var(--water-level, 0); }
+}
+
+.animate-progress-fill {
+  animation: progress-fill 1s ease-out forwards;
+}
+
+.animate-water-fill {
+  animation: water-fill 1s ease-out forwards;
+}
+
+/* Añadir soporte para safe-area en dispositivos con notch */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .snapeat-container {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  .fixed.top-0 {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .fixed.bottom-0 {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Ocultar scrollbar pero mantener funcionalidad */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }

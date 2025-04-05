@@ -2,6 +2,7 @@ import { createContext, useState, useContext, useEffect, ReactNode } from 'react
 import { StorageService } from '../services/storage-service';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Json } from '@/integrations/supabase/types';
 
 interface UserProfile {
   name: string;
@@ -477,7 +478,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       if (existingSettings?.reminder_times) {
         if (typeof existingSettings.reminder_times === 'string') {
           try {
-            reminderTimes = JSON.parse(existingSettings.reminder_times);
+            reminderTimes = JSON.parse(existingSettings.reminder_times as string);
           } catch (e) {
             console.error("Error parsing reminder_times:", e);
           }
@@ -501,7 +502,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           audio_exercises: settings.audioExercises !== undefined ? settings.audioExercises : user.settings?.audioExercises,
           notification_reminders: true,
           notification_news: settings.newsNotifications !== undefined ? settings.newsNotifications : user.settings?.newsNotifications,
-          reminder_times: reminderTimes,
+          reminder_times: JSON.stringify(reminderTimes) as unknown as Json,
           updated_at: new Date().toISOString(),
         });
       
@@ -699,7 +700,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }
       
       const userId = await getCurrentUserId();
-      const today = new Date().toISOString().split('T')[0];
       
       const { data: logData, error: logError } = await supabase
         .from('daily_logs')

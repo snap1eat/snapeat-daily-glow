@@ -452,7 +452,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       
       const { data: existingSettings } = await supabase
         .from('user_settings')
-        .select('id')
+        .select('id, reminder_times')
         .eq('id', userId)
         .single();
       
@@ -607,7 +607,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       if (mealError) throw mealError;
       
       const mealFoods = meal.foods.map(food => ({
-        meal_id: mealData.id,
+        meal_id: mealData?.id,
         food_item_id: food.id,
         name: food.name,
         quantity: food.quantity,
@@ -626,6 +626,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       
       if (foodsError) throw foodsError;
       
+      const today = new Date().toISOString().split('T')[0];
       const updatedLogs = user.dailyLogs.map(log => {
         if (log.date === today) {
           return {

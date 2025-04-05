@@ -122,6 +122,26 @@ const defaultSettings: UserSettings = {
   newsNotifications: true,
 };
 
+interface UserContextType {
+  user: UserState;
+  updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
+  updateNutritionGoals: (goals: Partial<NutritionGoals>) => Promise<void>;
+  updateSettings: (settings: Partial<UserSettings>) => Promise<void>;
+  updateHealthData?: (data: Partial<HealthData>) => Promise<void>;
+  logMeal: (meal: MealLog) => Promise<void>;
+  incrementWater: () => Promise<void>;
+  getTodayLog: () => DailyLog;
+  getDailyCalories: () => number;
+  getDailyProtein: () => number;
+  getDailyCarbs: () => number;
+  getDailyFat: () => number;
+  getTodayMealsByType: (type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink') => MealLog[];
+  calculateGoalsBasedOnObjective: (objective: string) => NutritionGoals;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, profile: Partial<UserProfile>) => Promise<void>;
+  logout: () => Promise<void>;
+}
+
 const UserContext = createContext<UserContextType>({
   user: {
     profile: defaultProfile,

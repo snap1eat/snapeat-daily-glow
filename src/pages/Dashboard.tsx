@@ -6,8 +6,9 @@ import { ProgressCircle } from '@/components/ProgressCircle';
 import { MealIndicator } from '@/components/MealIndicator';
 import { PineappleMascot } from '@/components/PineappleMascot';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Droplet } from 'lucide-react';
+import { Droplet, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { MacroDistributionChart } from '@/components/MacroDistributionChart';
 
 const Dashboard = () => {
   const { 
@@ -17,7 +18,7 @@ const Dashboard = () => {
     getDailyProtein, 
     getDailyCarbs, 
     getDailyFat,
-    getTodayMealByType,
+    getTodayMealsByType,
     incrementWater 
   } = useUser();
   const { toast } = useToast();
@@ -32,21 +33,24 @@ const Dashboard = () => {
   const carbsPercentage = Math.round((totalCarbs / user.nutritionGoals.carbs) * 100);
   const fatPercentage = Math.round((totalFat / user.nutritionGoals.fat) * 100);
   
+  // Determine if any nutrient exceeds the recommended limit (>110%)
+  const hasExcess = caloriePercentage > 110 || proteinPercentage > 110 || carbsPercentage > 110 || fatPercentage > 110;
+  
   // Check if meals have been logged
-  const breakfast = getTodayMealByType('breakfast');
-  const lunch = getTodayMealByType('lunch');
-  const dinner = getTodayMealByType('dinner');
-  const snack = getTodayMealByType('snack');
+  const breakfastMeals = getTodayMealsByType('breakfast');
+  const lunchMeals = getTodayMealsByType('lunch');
+  const dinnerMeals = getTodayMealsByType('dinner');
+  const snackMeals = getTodayMealsByType('snack');
   
   // Calculate mascot mood (0-10) based on activity
   const calculateMascotMood = () => {
     let mood = 5; // neutral starting point
     
     // Add points for logged meals
-    if (breakfast) mood += 1;
-    if (lunch) mood += 1;
-    if (dinner) mood += 1;
-    if (snack) mood += 0.5;
+    if (breakfastMeals.length > 0) mood += 1;
+    if (lunchMeals.length > 0) mood += 1;
+    if (dinnerMeals.length > 0) mood += 1;
+    if (snackMeals.length > 0) mood += 0.5;
     
     // Add points for water
     mood += todayLog.waterGlasses * 0.25;
@@ -78,7 +82,7 @@ const Dashboard = () => {
   
   // Get personalized recommendation
   const getDailyRecommendation = () => {
-    if (!breakfast) {
+    if (breakfastMeals.length === 0) {
       return "Te saltaste el desayuno. ¡Es la comida más importante del día!";
     }
     
@@ -96,6 +100,18 @@ const Dashboard = () => {
     
     return "¡Vas por buen camino! Sigue manteniendo este equilibrio nutricional.";
   };
+  
+  // Show excess alert message if there's an excess
+  useEffect(() => {
+    if (hasExcess) {
+      toast({
+        variant: "destructive",
+        title: "¡Atención!",
+        description: "Has excedido algunas de tus metas nutricionales diarias.",
+        action: <AlertTriangle className="h-5 w-5" />
+      });
+    }
+  }, [hasExcess]);
 
   return (
     <div className="pt-16 pb-4">
@@ -113,16 +129,21 @@ const Dashboard = () => {
               size={120}
               label="Calorías"
               value={`${Math.round(totalCalories)} / ${user.nutritionGoals.calories}`}
+              showAlert={caloriePercentage > 110}
             />
           </div>
           
-          <div className="grid grid-cols-3 gap-2 mt-2">
+          <div className="flex justify-center mt-2 mb-4">
+            <MacroDistributionChart showAlert={hasExcess} />
+          </div>
+          
+          <div className="grid grid-cols-3 gap-2 mt-4">
             <div className="flex flex-col items-center">
               <div className="text-sm font-medium">Proteínas</div>
               <div className="w-full progress-container mt-1">
                 <div 
-                  className="progress-bar bg-blue-500" 
-                  style={{ '--progress-width': `${proteinPercentage}%` } as React.CSSProperties}
+                  className={`progress-bar ${proteinPercentage > 110 ? 'bg-red-500' : 'bg-blue-500'}`} 
+                  style={{ '--progress-width': `${Math.min(proteinPercentage, 100)}%` } as React.CSSProperties}
                 ></div>
               </div>
               <div className="text-xs mt-1">{totalProtein.toFixed(1)}g / {user.nutritionGoals.protein}g</div>
@@ -132,8 +153,8 @@ const Dashboard = () => {
               <div className="text-sm font-medium">Carbohidratos</div>
               <div className="w-full progress-container mt-1">
                 <div 
-                  className="progress-bar bg-amber-500" 
-                  style={{ '--progress-width': `${carbsPercentage}%` } as React.CSSProperties} 
+                  className={`progress-bar ${carbsPercentage > 110 ? 'bg-red-500' : 'bg-amber-500'}`} 
+                  style={{ '--progress-width': `${Math.min(carbsPercentage, 100)}%` } as React.CSSProperties} 
                 ></div>
               </div>
               <div className="text-xs mt-1">{totalCarbs.toFixed(1)}g / {user.nutritionGoals.carbs}g</div>
@@ -143,8 +164,8 @@ const Dashboard = () => {
               <div className="text-sm font-medium">Grasas</div>
               <div className="w-full progress-container mt-1">
                 <div 
-                  className="progress-bar bg-green-500" 
-                  style={{ '--progress-width': `${fatPercentage}%` } as React.CSSProperties}
+                  className={`progress-bar ${fatPercentage > 110 ? 'bg-red-500' : 'bg-green-500'}`} 
+                  style={{ '--progress-width': `${Math.min(fatPercentage, 100)}%` } as React.CSSProperties}
                 ></div>
               </div>
               <div className="text-xs mt-1">{totalFat.toFixed(1)}g / {user.nutritionGoals.fat}g</div>
@@ -162,23 +183,27 @@ const Dashboard = () => {
           <div className="grid grid-cols-4 gap-2">
             <MealIndicator 
               type="breakfast" 
-              isCompleted={!!breakfast}
+              isCompleted={breakfastMeals.length > 0}
               label="Desayuno"
+              count={breakfastMeals.length}
             />
             <MealIndicator 
               type="lunch" 
-              isCompleted={!!lunch}
+              isCompleted={lunchMeals.length > 0}
               label="Almuerzo"
+              count={lunchMeals.length}
             />
             <MealIndicator 
               type="dinner" 
-              isCompleted={!!dinner}
+              isCompleted={dinnerMeals.length > 0}
               label="Cena"
+              count={dinnerMeals.length}
             />
             <MealIndicator 
               type="snack" 
-              isCompleted={!!snack}
+              isCompleted={snackMeals.length > 0}
               label="Snack"
+              count={snackMeals.length}
             />
           </div>
         </CardContent>
@@ -199,7 +224,7 @@ const Dashboard = () => {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Tu reco de hoy</CardTitle>
+            <CardTitle className="text-lg">Consejo de hoy</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm">{getDailyRecommendation()}</p>

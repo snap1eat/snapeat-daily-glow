@@ -6,23 +6,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Utensils, CheckCircle } from 'lucide-react';
+import { Search, Utensils, CheckCircle, Camera, Image } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { FoodSearchResult } from '@/components/FoodSearchResult';
+import { CameraCapture } from '@/components/CameraCapture';
 
-// Dummy food database
+// Dummy food database with default portion sizes
 const foodDatabase = [
-  { id: '1', name: 'Manzana', calories: 95, protein: 0.5, carbs: 25, fat: 0.3, sodium: 2, fiber: 4, sugar: 19 },
-  { id: '2', name: 'Plátano', calories: 105, protein: 1.3, carbs: 27, fat: 0.4, sodium: 1, fiber: 3.1, sugar: 14 },
-  { id: '3', name: 'Pollo a la parrilla', calories: 165, protein: 31, carbs: 0, fat: 3.6, sodium: 74, fiber: 0, sugar: 0 },
-  { id: '4', name: 'Arroz blanco', calories: 130, protein: 2.7, carbs: 28, fat: 0.3, sodium: 1, fiber: 0.4, sugar: 0.1 },
-  { id: '5', name: 'Huevo', calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, sodium: 62, fiber: 0, sugar: 0.6 },
-  { id: '6', name: 'Pan integral', calories: 81, protein: 4, carbs: 13.8, fat: 1.1, sodium: 144, fiber: 2, sugar: 1.4 },
-  { id: '7', name: 'Leche', calories: 42, protein: 3.4, carbs: 5, fat: 1, sodium: 44, fiber: 0, sugar: 5 },
-  { id: '8', name: 'Aguacate', calories: 160, protein: 2, carbs: 8.5, fat: 14.7, sodium: 7, fiber: 6.7, sugar: 0.7 },
-  { id: '9', name: 'Yogur', calories: 59, protein: 3.5, carbs: 5, fat: 3.3, sodium: 36, fiber: 0, sugar: 5 },
+  { id: '1', name: 'Manzana', calories: 95, protein: 0.5, carbs: 25, fat: 0.3, sodium: 2, fiber: 4, sugar: 19, defaultPortion: 150 },
+  { id: '2', name: 'Plátano', calories: 105, protein: 1.3, carbs: 27, fat: 0.4, sodium: 1, fiber: 3.1, sugar: 14, defaultPortion: 120 },
+  { id: '3', name: 'Pollo a la parrilla', calories: 165, protein: 31, carbs: 0, fat: 3.6, sodium: 74, fiber: 0, sugar: 0, defaultPortion: 85 },
+  { id: '4', name: 'Arroz blanco', calories: 130, protein: 2.7, carbs: 28, fat: 0.3, sodium: 1, fiber: 0.4, sugar: 0.1, defaultPortion: 75 },
+  { id: '5', name: 'Huevo', calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, sodium: 62, fiber: 0, sugar: 0.6, defaultPortion: 50 },
+  { id: '6', name: 'Pan integral', calories: 81, protein: 4, carbs: 13.8, fat: 1.1, sodium: 144, fiber: 2, sugar: 1.4, defaultPortion: 30 },
+  { id: '7', name: 'Leche', calories: 42, protein: 3.4, carbs: 5, fat: 1, sodium: 44, fiber: 0, sugar: 5, defaultPortion: 250 },
+  { id: '8', name: 'Aguacate', calories: 160, protein: 2, carbs: 8.5, fat: 14.7, sodium: 7, fiber: 6.7, sugar: 0.7, defaultPortion: 70 },
+  { id: '9', name: 'Yogur', calories: 59, protein: 3.5, carbs: 5, fat: 3.3, sodium: 36, fiber: 0, sugar: 5, defaultPortion: 125 },
 ];
 
 const FoodLog = () => {
@@ -32,6 +33,8 @@ const FoodLog = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFoods, setSelectedFoods] = useState<Array<{food: typeof foodDatabase[0], quantity: number}>>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [mealPhoto, setMealPhoto] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -41,8 +44,13 @@ const FoodLog = () => {
 
   const handleScan = () => {
     setIsScanning(true);
+    setShowCamera(true);
+  };
+
+  const handleCapturePhoto = (photoData: string) => {
+    setMealPhoto(photoData);
     
-    // Simulate scanning with a timeout
+    // Simulate scanning with a timeout after photo is captured
     setTimeout(() => {
       setIsScanning(false);
       
@@ -52,11 +60,11 @@ const FoodLog = () => {
       
       for (let i = 0; i < numItems; i++) {
         const randomIndex = Math.floor(Math.random() * foodDatabase.length);
-        const randomQuantity = Math.floor(Math.random() * 150) + 50; // 50-200g
-        
+        const food = foodDatabase[randomIndex];
+        // Use default portion size instead of random
         randomFoods.push({
-          food: foodDatabase[randomIndex],
-          quantity: randomQuantity
+          food: food,
+          quantity: food.defaultPortion
         });
       }
       
@@ -67,13 +75,13 @@ const FoodLog = () => {
         title: "Alimentos detectados",
         description: `Se han identificado ${randomFoods.length} alimentos.`
       });
-    }, 2000);
+    }, 1000);
   };
 
   const handleAddFood = (food: typeof foodDatabase[0]) => {
     setSelectedFoods(prev => [
       ...prev,
-      { food, quantity: 100 } // Default to 100g
+      { food, quantity: food.defaultPortion } // Use default portion size
     ]);
     setSearchQuery('');
   };
@@ -133,7 +141,8 @@ const FoodLog = () => {
       id: uuidv4(),
       type: mealType,
       foods,
-      timestamp: new Date()
+      timestamp: new Date(),
+      photo: mealPhoto || undefined
     });
 
     toast({
@@ -268,7 +277,36 @@ const FoodLog = () => {
                 </div>
               </div>
               
-              <div className="mt-6 space-y-2">
+              <div className="flex flex-col items-center mt-4">
+                {mealPhoto ? (
+                  <div className="relative mb-4 w-full max-w-xs">
+                    <img
+                      src={mealPhoto}
+                      alt="Foto de comida"
+                      className="w-full h-auto rounded-md"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="absolute top-2 right-2"
+                      onClick={() => setMealPhoto(null)}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    className="mb-4"
+                    variant="outline"
+                    onClick={() => setShowCamera(true)}
+                  >
+                    <Camera className="mr-2 h-4 w-4" />
+                    Añadir foto
+                  </Button>
+                )}
+              </div>
+              
+              <div className="mt-4 space-y-2">
                 <Button 
                   className="w-full" 
                   onClick={() => setStep('summary')}
@@ -303,6 +341,26 @@ const FoodLog = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {mealPhoto && (
+                <div className="mb-4 w-full flex justify-center">
+                  <div className="relative w-full max-w-xs">
+                    <img
+                      src={mealPhoto}
+                      alt="Foto de comida"
+                      className="w-full h-auto rounded-md"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="absolute top-2 right-2"
+                      onClick={() => setMealPhoto(null)}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
               <div className="space-y-2 mb-4">
                 {selectedFoods.map((item, index) => (
                   <div key={index} className="flex items-center justify-between border-b pb-2">
@@ -362,6 +420,12 @@ const FoodLog = () => {
           </Card>
         </>
       )}
+      
+      <CameraCapture 
+        open={showCamera}
+        onOpenChange={setShowCamera}
+        onCapture={handleCapturePhoto}
+      />
     </div>
   );
 };

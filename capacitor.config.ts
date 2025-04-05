@@ -27,6 +27,12 @@ const config: CapacitorConfig = {
     StatusBar: {
       style: "light",
       backgroundColor: "#82BF45"
+    },
+    Camera: {
+      promptLabelHeader: "Foto de comida",
+      promptLabelCancel: "Cancelar",
+      promptLabelPhoto: "Galería",
+      promptLabelPicture: "Cámara"
     }
   }
 };

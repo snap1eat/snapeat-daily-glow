@@ -1,64 +1,56 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
 import { useToast } from './use-toast';
 
-export function usePushNotifications() {
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [permissionStatus, setPermissionStatus] = useState<boolean | null>(null);
+export const usePushNotifications = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Verificamos si estamos en un entorno móvil nativo
-    const isMobileApp = window.Capacitor && window.Capacitor.isNativePlatform();
-    if (!isMobileApp) return;
-
-    // Registramos los listeners para las notificaciones
-    PushNotifications.addListener('registration', (token) => {
-      console.log('Push registration success, token: ' + token.value);
-    });
-
-    PushNotifications.addListener('registrationError', (error) => {
-      console.error('Error on registration: ' + JSON.stringify(error));
-    });
-
-    PushNotifications.addListener('pushNotificationReceived', (notification) => {
-      console.log('Push notification received: ' + JSON.stringify(notification));
-      setNotifications((notifications) => [...notifications, notification]);
-      
-      // Mostramos un toast con la notificación
-      toast({
-        title: notification.title || 'Nueva notificación',
-        description: notification.body || '',
-      });
-    });
-
-    PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-      console.log('Push notification action performed: ' + JSON.stringify(action));
-    });
-
-    // Pedimos permiso para enviar notificaciones
-    const requestPermissions = async () => {
-      try {
-        const result = await PushNotifications.requestPermissions();
-        setPermissionStatus(result.receive === 'granted');
-        
-        if (result.receive === 'granted') {
-          // Registramos la app para recibir notificaciones
-          await PushNotifications.register();
+    const registerNotifications = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          // Request permission to use push notifications
+          const permission = await PushNotifications.requestPermissions();
+          
+          if (permission.receive === 'granted') {
+            // Register with Apple / Google to receive push
+            await PushNotifications.register();
+            
+            // Register listeners
+            PushNotifications.addListener('registration', (token) => {
+              console.log('Push registration success: ', token.value);
+            });
+            
+            PushNotifications.addListener('registrationError', (error) => {
+              console.error('Error on registration: ', error);
+            });
+            
+            PushNotifications.addListener('pushNotificationReceived', (notification) => {
+              console.log('Push notification received: ', notification);
+              toast({
+                title: notification.title || 'Nueva notificación',
+                description: notification.body || '',
+              });
+            });
+            
+            PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+              console.log('Push notification action performed: ', action);
+            });
+          }
+        } catch (error) {
+          console.error('Error initializing push notifications: ', error);
         }
-      } catch (error) {
-        console.error('Error requesting push notification permissions', error);
       }
     };
 
-    requestPermissions();
+    registerNotifications();
 
     return () => {
-      // Limpiamos los listeners cuando el componente se desmonta
-      PushNotifications.removeAllListeners();
+      if (Capacitor.isNativePlatform()) {
+        PushNotifications.removeAllListeners();
+      }
     };
-  }, [toast]);
-
-  return { notifications, permissionStatus };
-}
+  }, []);
+};

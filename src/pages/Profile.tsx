@@ -13,10 +13,15 @@ import { useState } from 'react';
 import { PineappleMascot } from '@/components/PineappleMascot';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Camera, Settings } from 'lucide-react';
+import { CameraCapture } from '@/components/CameraCapture';
+import { UserSettings } from '@/components/UserSettings';
 
 const Profile = () => {
-  const { user, updateProfile, updateNutritionGoals } = useUser();
+  const { user, updateProfile, updateNutritionGoals, calculateGoalsBasedOnObjective } = useUser();
   const { toast } = useToast();
+  const [showCamera, setShowCamera] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   
   const [formData, setFormData] = useState({
     name: user.profile.name || '',
@@ -43,11 +48,11 @@ const Profile = () => {
     triglycerides: '',
     hypertension: false,
     foodIntolerances: '',
-    eatingDisorders: '',
     digestiveIssues: 'none',
     additionalHealthInfo: '',
     familyHypertension: false,
-    familyDiabetes: false
+    familyDiabetes: false,
+    tobacco: 'none'
   });
   
   const handleInputChange = (key: string, value: any) => {
@@ -92,6 +97,22 @@ const Profile = () => {
       description: "Se han guardado tus objetivos nutricionales."
     });
   };
+  
+  const handleApplyGoalBasedObjective = (objective: string) => {
+    const newGoals = calculateGoalsBasedOnObjective(objective);
+    setFormData(prev => ({
+      ...prev,
+      nutritionGoal: objective,
+      calories: newGoals.calories,
+      protein: newGoals.protein,
+      carbs: newGoals.carbs,
+      fat: newGoals.fat
+    }));
+    
+    toast({
+      description: "Objetivos nutricionales actualizados según tu objetivo."
+    });
+  };
 
   const handleSaveHealthHistory = () => {
     toast({
@@ -110,12 +131,36 @@ const Profile = () => {
     }
     return formData.username.substring(0, 2).toUpperCase();
   };
+  
+  const handleAvatarCapture = (photoData: string) => {
+    updateProfile({
+      avatar: photoData
+    });
+    
+    toast({
+      description: "Foto de perfil actualizada exitosamente."
+    });
+  };
 
   return (
     <div className="pt-16 pb-4">
+      <div className="flex justify-end mb-2">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => setShowSettings(true)}
+          className="rounded-full"
+        >
+          <Settings className="h-5 w-5" />
+        </Button>
+      </div>
+      
       <div className="flex flex-col items-center mb-6">
         <div className="relative mb-3">
-          <Avatar className="w-24 h-24 border-2 border-primary">
+          <Avatar 
+            className="w-24 h-24 border-2 border-primary cursor-pointer"
+            onClick={() => setShowCamera(true)}
+          >
             {user.profile.avatar ? (
               <AvatarImage src={user.profile.avatar} alt={formData.username} />
             ) : (
@@ -123,6 +168,9 @@ const Profile = () => {
                 {getInitials()}
               </AvatarFallback>
             )}
+            <div className="absolute bottom-0 right-0 bg-primary rounded-full p-1 shadow-sm">
+              <Camera className="h-4 w-4 text-white" />
+            </div>
           </Avatar>
           <div className="absolute -top-2 -right-2">
             <PineappleMascot size="sm" mood={10} showCrown={true} />
@@ -271,7 +319,10 @@ const Profile = () => {
                   <Label htmlFor="nutrition-goal">Mi objetivo principal es</Label>
                   <Select 
                     value={formData.nutritionGoal} 
-                    onValueChange={(value) => handleInputChange('nutritionGoal', value)}
+                    onValueChange={(value) => {
+                      handleInputChange('nutritionGoal', value);
+                      handleApplyGoalBasedObjective(value);
+                    }}
                   >
                     <SelectTrigger id="nutrition-goal">
                       <SelectValue placeholder="Selecciona tu objetivo" />
@@ -378,6 +429,24 @@ const Profile = () => {
                       <SelectItem value="occasional">Ocasional</SelectItem>
                       <SelectItem value="moderate">Moderado</SelectItem>
                       <SelectItem value="frequent">Frecuente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="tobacco">Consumo de tabaco</Label>
+                  <Select 
+                    value={formData.tobacco} 
+                    onValueChange={(value) => handleInputChange('tobacco', value)}
+                  >
+                    <SelectTrigger id="tobacco">
+                      <SelectValue placeholder="Selecciona tu consumo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No consumo</SelectItem>
+                      <SelectItem value="occasional">Ocasional</SelectItem>
+                      <SelectItem value="regular">Regular</SelectItem>
+                      <SelectItem value="heavy">Intenso</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -567,16 +636,6 @@ const Profile = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="eating-disorders">Trastornos alimentarios</Label>
-                  <Input
-                    id="eating-disorders"
-                    value={formData.eatingDisorders}
-                    onChange={(e) => handleInputChange('eatingDisorders', e.target.value)}
-                    placeholder="Ej: Anorexia, bulimia..."
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="digestive-issues">Trastornos gastrointestinales</Label>
                   <Select 
                     value={formData.digestiveIssues} 
@@ -592,7 +651,6 @@ const Profile = () => {
                       <SelectItem value="gases">Gases</SelectItem>
                       <SelectItem value="constipation">Estreñimiento</SelectItem>
                       <SelectItem value="diarrhea">Diarrea</SelectItem>
-                      <SelectItem value="drink">Bebida</SelectItem>
                       <SelectItem value="other">Otro</SelectItem>
                     </SelectContent>
                   </Select>
@@ -644,6 +702,17 @@ const Profile = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <CameraCapture 
+        open={showCamera} 
+        onOpenChange={setShowCamera}
+        onCapture={handleAvatarCapture}
+      />
+      
+      <UserSettings 
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
     </div>
   );
 };

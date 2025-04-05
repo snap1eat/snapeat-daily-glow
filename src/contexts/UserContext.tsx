@@ -1,3 +1,4 @@
+
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { StorageService } from '../services/storage-service';
 
@@ -25,6 +26,7 @@ interface MealLog {
   type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink';
   foods: Food[];
   timestamp: Date;
+  photo?: string; // Added photo property
 }
 
 interface Food {
@@ -67,6 +69,20 @@ interface UserState {
   currentStreak: number;
   totalEatsPoints: number;
   healthData?: HealthData;
+  settings?: UserSettings; // Added settings
+}
+
+interface UserSettings {
+  sound: boolean;
+  vibration: boolean;
+  animations: boolean;
+  motivationalMessages: boolean;
+  audioExercises: boolean;
+  email?: string;
+  phone?: string;
+  password?: string;
+  reminderTime?: string;
+  newsNotifications: boolean;
 }
 
 interface UserContextType {
@@ -74,6 +90,7 @@ interface UserContextType {
   updateProfile: (profile: Partial<UserProfile>) => void;
   updateNutritionGoals: (goals: Partial<NutritionGoals>) => void;
   updateHealthData?: (data: Partial<HealthData>) => void;
+  updateSettings: (settings: Partial<UserSettings>) => void;
   logMeal: (meal: MealLog) => void;
   incrementWater: () => void;
   getTodayLog: () => DailyLog;
@@ -81,7 +98,9 @@ interface UserContextType {
   getDailyProtein: () => number;
   getDailyCarbs: () => number;
   getDailyFat: () => number;
-  getTodayMealByType: (type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink') => MealLog | null;
+  getTodayMealsByType: (type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink') => MealLog[];
+  calculateGoalsBasedOnObjective: (objective: string) => NutritionGoals;
+  logout: () => void;
 }
 
 // Default values
@@ -103,6 +122,15 @@ const defaultNutritionGoals: NutritionGoals = {
   fat: 70,
 };
 
+const defaultSettings: UserSettings = {
+  sound: true,
+  vibration: true,
+  animations: true,
+  motivationalMessages: true,
+  audioExercises: false,
+  newsNotifications: true,
+};
+
 // Create context with default values
 const UserContext = createContext<UserContextType>({
   user: {
@@ -111,9 +139,11 @@ const UserContext = createContext<UserContextType>({
     dailyLogs: [],
     currentStreak: 0,
     totalEatsPoints: 0,
+    settings: defaultSettings,
   },
   updateProfile: () => {},
   updateNutritionGoals: () => {},
+  updateSettings: () => {},
   logMeal: () => {},
   incrementWater: () => {},
   getTodayLog: () => ({
@@ -127,7 +157,9 @@ const UserContext = createContext<UserContextType>({
   getDailyProtein: () => 0,
   getDailyCarbs: () => 0,
   getDailyFat: () => 0,
-  getTodayMealByType: () => null,
+  getTodayMealsByType: () => [],
+  calculateGoalsBasedOnObjective: () => defaultNutritionGoals,
+  logout: () => {},
 });
 
 // Provider component
@@ -147,6 +179,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }],
       currentStreak: 1,
       totalEatsPoints: 0,
+      settings: defaultSettings,
     };
   });
 
@@ -170,6 +203,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
               }
             });
           }
+          // Ensure settings is initialized
+          if (!storedUser.settings) {
+            storedUser.settings = defaultSettings;
+          }
           setUser(storedUser);
         } else {
           // If no data in Capacitor Storage, try from localStorage for web version
@@ -185,6 +222,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                   });
                 }
               });
+            }
+            // Ensure settings is initialized
+            if (!parsedUser.settings) {
+              parsedUser.settings = defaultSettings;
             }
             setUser(parsedUser);
             
@@ -219,6 +260,68 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, isLoading]);
 
+  // Calculate nutrition goals based on objective
+  const calculateGoalsBasedOnObjective = (objective: string): NutritionGoals => {
+    const { weight, height, age, gender, activityLevel } = user.profile;
+    let bmr = 0;
+    
+    // Calculate BMR using Mifflin-St Jeor Equation
+    if (gender === 'male') {
+      bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+    } else {
+      bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+    }
+    
+    // Activity multiplier
+    let activityMultiplier = 1.2; // Sedentary
+    switch(activityLevel) {
+      case 'light': activityMultiplier = 1.375; break;
+      case 'moderate': activityMultiplier = 1.55; break;
+      case 'active': activityMultiplier = 1.725; break;
+      case 'extra_active': activityMultiplier = 1.9; break;
+    }
+    
+    let calories = Math.round(bmr * activityMultiplier);
+    
+    // Adjust calories based on objective
+    switch(objective) {
+      case 'weight_loss': calories -= 500; break; // Deficit for weight loss
+      case 'weight_gain': calories += 500; break; // Surplus for weight gain
+      case 'muscle_gain': calories += 300; break; // Smaller surplus for lean muscle gain
+    }
+    
+    // Calculate macros based on objective
+    let protein = 0;
+    let fat = 0;
+    let carbs = 0;
+    
+    switch(objective) {
+      case 'weight_loss':
+        protein = Math.round(weight * 2.2); // Higher protein during weight loss (g)
+        fat = Math.round(weight * 0.4); // Moderate fat (g)
+        carbs = Math.round((calories - (protein * 4 + fat * 9)) / 4); // Remainder carbs
+        break;
+      case 'muscle_gain':
+        protein = Math.round(weight * 1.6); // High protein for muscle building (g)
+        fat = Math.round(calories * 0.25 / 9); // 25% of calories from fat
+        carbs = Math.round((calories - (protein * 4 + fat * 9)) / 4); // Remainder carbs
+        break;
+      case 'maintain':
+      default:
+        protein = Math.round(weight * 1.2); // Moderate protein (g)
+        fat = Math.round(calories * 0.3 / 9); // 30% of calories from fat
+        carbs = Math.round((calories - (protein * 4 + fat * 9)) / 4); // Remainder carbs
+    }
+    
+    // Ensure values are positive and reasonable
+    calories = Math.max(1200, calories);
+    protein = Math.max(50, protein);
+    fat = Math.max(30, fat);
+    carbs = Math.max(50, carbs);
+    
+    return { calories, protein, carbs, fat };
+  };
+
   // Update user profile
   const updateProfile = (profile: Partial<UserProfile>) => {
     setUser(prev => ({
@@ -238,6 +341,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         ...prev.nutritionGoals,
         ...goals,
       },
+    }));
+  };
+
+  // Update settings
+  const updateSettings = (settings: Partial<UserSettings>) => {
+    setUser(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        ...settings,
+      }
     }));
   };
 
@@ -279,37 +393,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     return newLog;
   };
 
-  // Log a meal
+  // Log a meal - Modified to allow multiple meals of the same type
   const logMeal = (meal: MealLog) => {
     const today = new Date().toISOString().split('T')[0];
     const updatedLogs = user.dailyLogs.map(log => {
       if (log.date === today) {
-        // Para snacks y bebidas, permitir múltiples entradas
-        if (meal.type === 'snack' || meal.type === 'drink') {
-          return {
-            ...log,
-            meals: [...log.meals, meal],
-            eatsPoints: log.eatsPoints + 10,
-          };
-        } else {
-          // Para comidas principales, reemplazar si existe
-          const existingMealIndex = log.meals.findIndex(m => m.type === meal.type);
-          if (existingMealIndex >= 0) {
-            const updatedMeals = [...log.meals];
-            updatedMeals[existingMealIndex] = meal;
-            return {
-              ...log,
-              meals: updatedMeals,
-              eatsPoints: log.eatsPoints + 10,
-            };
-          } else {
-            return {
-              ...log,
-              meals: [...log.meals, meal],
-              eatsPoints: log.eatsPoints + 10,
-            };
-          }
-        }
+        // Always add the meal, don't replace existing meals
+        return {
+          ...log,
+          meals: [...log.meals, meal],
+          eatsPoints: log.eatsPoints + 10,
+        };
       }
       return log;
     });
@@ -369,15 +463,33 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }, 0);
   };
 
-  // Get meal by type for today
-  const getTodayMealByType = (type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink'): MealLog | null => {
+  // Get all meals of a specific type for today
+  const getTodayMealsByType = (type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink'): MealLog[] => {
     const todayLog = getTodayLog();
-    // Para snacks y bebidas que pueden tener múltiples entradas, devolvemos el último
-    if (type === 'snack' || type === 'drink') {
-      const meals = todayLog.meals.filter(meal => meal.type === type);
-      return meals.length > 0 ? meals[meals.length - 1] : null;
-    }
-    return todayLog.meals.find(meal => meal.type === type) || null;
+    return todayLog.meals.filter(meal => meal.type === type);
+  };
+
+  // Logout function
+  const logout = () => {
+    // Clear user data from state
+    setUser({
+      profile: defaultProfile,
+      nutritionGoals: defaultNutritionGoals,
+      dailyLogs: [{
+        date: new Date().toISOString().split('T')[0],
+        meals: [],
+        waterGlasses: 0,
+        streakDay: 1,
+        eatsPoints: 0,
+      }],
+      currentStreak: 1,
+      totalEatsPoints: 0,
+      settings: defaultSettings,
+    });
+    
+    // Clear storage
+    localStorage.removeItem('snapeat_user');
+    StorageService.remove('snapeat_user');
   };
 
   return (
@@ -387,6 +499,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         updateProfile,
         updateNutritionGoals,
         updateHealthData,
+        updateSettings,
         logMeal,
         incrementWater,
         getTodayLog,
@@ -394,7 +507,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         getDailyProtein,
         getDailyCarbs,
         getDailyFat,
-        getTodayMealByType,
+        getTodayMealsByType,
+        calculateGoalsBasedOnObjective,
+        logout,
       }}
     >
       {isLoading ? (

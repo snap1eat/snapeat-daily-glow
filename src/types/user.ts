@@ -1,3 +1,4 @@
+
 export interface UserProfile {
   name: string;
   age: number;
@@ -7,6 +8,7 @@ export interface UserProfile {
   activityLevel: string;
   avatar: string;
   username: string;
+  healthGoals: string[]; // Add healthGoals array
 }
 
 export interface NutritionGoals {
@@ -51,7 +53,10 @@ export interface UserSettings {
   animations: boolean;
   motivationalMessages: boolean;
   newsNotifications: boolean;
-  audioExercises: false,
+  email?: string;
+  phone?: string;
+  password?: string;
+  reminderTime?: string;
 }
 
 export interface HealthData {
@@ -79,7 +84,7 @@ export interface UserContextType {
   updateNutritionGoals: (goals: Partial<NutritionGoals>) => Promise<void>;
   updateHealthData: (data: Partial<HealthData>) => Promise<void>;
   updateSettings: (settings: Partial<UserSettings>) => Promise<void>;
-  logMeal: (meal: MealLog>) => Promise<void>;
+  logMeal: (meal: MealLog) => Promise<void>;
   incrementWater: () => Promise<void>;
   decrementWater: () => Promise<void>;
   getTodayLog: () => DailyLog;

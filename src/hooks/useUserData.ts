@@ -85,7 +85,7 @@ export const useUserData = () => {
           activityLevel: profileData.activity_level || defaultProfile.activityLevel,
           avatar: profileData.avatar_url || defaultProfile.avatar,
           username: profileData.display_name || defaultProfile.username,
-          healthGoals: profileData.health_goals ? JSON.parse(profileData.health_goals) : defaultProfile.healthGoals,
+          healthGoals: profileData.health_goal ? [profileData.health_goal] : defaultProfile.healthGoals,
         };
         
         const updatedGoals: NutritionGoals = {

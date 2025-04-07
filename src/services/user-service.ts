@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DailyLog, Food, MealLog, NutritionGoals, UserProfile, UserSettings } from '@/types/user';
 import { Json } from '@/integrations/supabase/types';
@@ -31,6 +30,7 @@ export const updateUserProfile = async (userId: string, profile: Partial<UserPro
       height: profile.height,
       activity_level: profile.activityLevel,
       avatar_url: profile.avatar,
+      health_goal: profile.healthGoals?.length ? profile.healthGoals[0] : null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId);

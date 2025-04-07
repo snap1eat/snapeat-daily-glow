@@ -1,4 +1,5 @@
 
+
 export interface UserProfile {
   name: string;
   age: number;
@@ -53,10 +54,18 @@ export interface UserSettings {
   animations: boolean;
   motivationalMessages: boolean;
   newsNotifications: boolean;
+  audioExercises?: boolean; // Add back audioExercises as optional
   email?: string;
   phone?: string;
   password?: string;
   reminderTime?: string;
+}
+
+export interface ReminderTimes {
+  breakfast: string;
+  lunch: string;
+  dinner: string;
+  snack: string;
 }
 
 export interface HealthData {

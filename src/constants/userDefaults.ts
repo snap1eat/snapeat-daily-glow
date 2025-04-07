@@ -26,4 +26,5 @@ export const defaultSettings: UserSettings = {
   animations: true,
   motivationalMessages: true,
   newsNotifications: true,
+  audioExercises: true, // Add audioExercises to default settings
 };

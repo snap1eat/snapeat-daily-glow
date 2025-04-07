@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
@@ -42,12 +41,10 @@ export const UserSettings = ({ open, onClose }: { open: boolean, onClose: () => 
     vibration: user.settings?.vibration ?? true,
     animations: user.settings?.animations ?? true,
     motivationalMessages: user.settings?.motivationalMessages ?? true,
-    audioExercises: user.settings?.audioExercises ?? false,
     reminderTime: user.settings?.reminderTime || '08:00',
     newsNotifications: user.settings?.newsNotifications ?? true
   });
 
-  // Update form data when user settings change
   useEffect(() => {
     setFormData({
       name: user.profile.name || '',
@@ -59,7 +56,6 @@ export const UserSettings = ({ open, onClose }: { open: boolean, onClose: () => 
       vibration: user.settings?.vibration ?? true,
       animations: user.settings?.animations ?? true,
       motivationalMessages: user.settings?.motivationalMessages ?? true,
-      audioExercises: user.settings?.audioExercises ?? false,
       reminderTime: user.settings?.reminderTime || '08:00',
       newsNotifications: user.settings?.newsNotifications ?? true
     });
@@ -81,7 +77,6 @@ export const UserSettings = ({ open, onClose }: { open: boolean, onClose: () => 
       vibration: formData.vibration,
       animations: formData.animations,
       motivationalMessages: formData.motivationalMessages,
-      audioExercises: formData.audioExercises,
       reminderTime: formData.reminderTime,
       newsNotifications: formData.newsNotifications,
     });
@@ -95,7 +90,6 @@ export const UserSettings = ({ open, onClose }: { open: boolean, onClose: () => 
   };
 
   const handleDeleteAccount = async () => {
-    // In a real app, this would call an API to delete the account
     await logout();
     toast({
       title: "Cuenta eliminada",
@@ -166,15 +160,6 @@ export const UserSettings = ({ open, onClose }: { open: boolean, onClose: () => 
                     id="motivational"
                     checked={formData.motivationalMessages}
                     onCheckedChange={(checked) => handleInputChange('motivationalMessages', checked)}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="audio">Ejercicios de audio</Label>
-                  <Switch 
-                    id="audio"
-                    checked={formData.audioExercises}
-                    onCheckedChange={(checked) => handleInputChange('audioExercises', checked)}
                   />
                 </div>
               </div>
@@ -323,7 +308,6 @@ export const UserSettings = ({ open, onClose }: { open: boolean, onClose: () => 
         </DialogFooter>
       </DialogContent>
       
-      {/* Confirmation dialog for account deletion */}
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <DialogContent className="max-w-sm">
           <DialogHeader>

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { StorageService } from '@/services/storage-service';
 import { supabase } from '@/integrations/supabase/client';
@@ -86,6 +85,7 @@ export const useUserData = () => {
           activityLevel: profileData.activity_level || defaultProfile.activityLevel,
           avatar: profileData.avatar_url || defaultProfile.avatar,
           username: profileData.display_name || defaultProfile.username,
+          healthGoals: profileData.health_goals ? JSON.parse(profileData.health_goals) : defaultProfile.healthGoals,
         };
         
         const updatedGoals: NutritionGoals = {

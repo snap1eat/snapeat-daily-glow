@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { DailyLog, Food, MealLog, NutritionGoals, UserProfile, UserSettings } from '@/types/user';
 import { Json } from '@/integrations/supabase/types';
@@ -123,9 +124,10 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
   
   if (mealError) throw mealError;
   
+  // Modificamos esta parte para no usar food_item_id y evitar el error de clave foránea
   const mealFoods = meal.foods.map(food => ({
     meal_id: mealData.id,
-    food_item_id: food.id,
+    food_item_id: null, // Cambiamos a null para evitar el error de clave foránea
     name: food.name,
     quantity: food.quantity,
     calories: food.calories,

@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, ChevronRight, LogIn, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, ChevronRight, LogIn, UserPlus, Mail } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -134,7 +134,8 @@ const Auth = () => {
 
         toast({
           title: "¡Cuenta creada!",
-          description: "Por favor, inicia sesión para continuar",
+          description: "Te hemos enviado un correo de verificación. Por favor, confirma tu correo para poder iniciar sesión.",
+          variant: "default",
         });
 
         setIsLogin(true);
@@ -148,6 +149,8 @@ const Auth = () => {
         errorMessage = 'Este correo ya está registrado. Intenta iniciar sesión.';
       } else if (error.message?.includes('Invalid login')) {
         errorMessage = 'Correo o contraseña incorrectos.';
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = 'Debes confirmar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.';
       }
       
       setErrors({ ...errors, form: errorMessage });
@@ -157,19 +160,17 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">
-            {isLogin ? 'Iniciar sesión' : (step === 1 ? 'Crear cuenta' : 'Tu objetivo nutricional')}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-green-50 to-green-100 p-4">
+      <Card className="w-full max-w-md border-green-200 shadow-lg">
+        <CardHeader className="space-y-1 bg-green-600 text-white rounded-t-lg">
+          <CardTitle className="text-3xl text-center font-bold">
+            SnapEat
           </CardTitle>
-          <CardDescription className="text-center">
-            {isLogin ? 'Ingresa tus datos para acceder' : (
-              step === 1 ? 'Completa el formulario para registrarte' : 'Selecciona tu objetivo principal'
-            )}
+          <CardDescription className="text-green-100 text-center text-lg">
+            {isLogin ? 'Iniciar sesión' : (step === 1 ? 'Crear cuenta' : 'Tu objetivo nutricional')}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {errors.form && (
             <Alert variant="destructive" className="mb-4">
               <AlertDescription>{errors.form}</AlertDescription>
@@ -186,6 +187,7 @@ const Auth = () => {
                   placeholder="Introduce tu nombre"
                   value={formValues.name}
                   onChange={handleInputChange}
+                  className="border-green-200 focus:border-green-500 focus:ring-green-500"
                 />
                 {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
               </div>
@@ -202,6 +204,7 @@ const Auth = () => {
                     placeholder="ejemplo@correo.com"
                     value={formValues.email}
                     onChange={handleInputChange}
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500"
                   />
                   {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
                 </div>
@@ -210,7 +213,7 @@ const Auth = () => {
                   <div className="flex justify-between">
                     <Label htmlFor="password">Contraseña</Label>
                     {isLogin && (
-                      <a href="#" className="text-sm text-blue-500 hover:underline">
+                      <a href="#" className="text-sm text-green-600 hover:underline">
                         ¿Olvidaste tu contraseña?
                       </a>
                     )}
@@ -223,6 +226,7 @@ const Auth = () => {
                       placeholder={isLogin ? "Tu contraseña" : "Mínimo 8 caracteres"}
                       value={formValues.password}
                       onChange={handleInputChange}
+                      className="border-green-200 focus:border-green-500 focus:ring-green-500"
                     />
                     <button
                       type="button"
@@ -274,6 +278,7 @@ const Auth = () => {
                     placeholder="Por ejemplo: quiero mejorar mi condición física..."
                     value={formValues.additionalInfo}
                     onChange={handleInputChange}
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500"
                   />
                 </div>
               </>
@@ -289,7 +294,7 @@ const Auth = () => {
               <Button 
                 type="submit" 
                 disabled={isLoading}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
               >
                 {isLoading ? (
                   <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
@@ -305,6 +310,17 @@ const Auth = () => {
             </div>
           </form>
 
+          {!isLogin && step === 1 && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+              <div className="flex items-start gap-2">
+                <Mail className="text-blue-500 mt-1" size={18} />
+                <p className="text-sm text-blue-700">
+                  Después de registrarte, recibirás un correo electrónico de verificación. <strong>Debes confirmar tu correo</strong> para poder iniciar sesión.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               {isLogin ? '¿No tienes una cuenta?' : '¿Ya tienes una cuenta?'}
@@ -315,7 +331,7 @@ const Auth = () => {
                   setStep(1);
                   setErrors({});
                 }}
-                className="ml-1 text-blue-500 hover:underline"
+                className="ml-1 text-green-600 hover:underline"
               >
                 {isLogin ? 'Regístrate' : 'Inicia sesión'}
               </button>

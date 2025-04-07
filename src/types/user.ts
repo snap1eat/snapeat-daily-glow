@@ -1,10 +1,9 @@
-
 export interface UserProfile {
   name: string;
   age: number;
   gender: string;
-  weight: number; // in kg
-  height: number; // in cm
+  weight: number;
+  height: number;
   activityLevel: string;
   avatar: string;
   username: string;
@@ -12,57 +11,38 @@ export interface UserProfile {
 
 export interface NutritionGoals {
   calories: number;
-  protein: number; // in g
-  carbs: number; // in g
-  fat: number; // in g
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+export interface Food {
+  id: string;
+  name: string;
+  quantity: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  sodium: number;
+  fiber: number;
+  sugar: number;
 }
 
 export interface MealLog {
-  id: string;
+  id?: string;
   type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink';
   foods: Food[];
   timestamp: Date;
   photo?: string;
 }
 
-export interface Food {
-  id: string;
-  name: string;
-  quantity: number; // in g
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  sodium?: number;
-  fiber?: number;
-  sugar?: number;
-}
-
-export interface HealthData {
-  glycemia?: string;
-  cholesterol?: string;
-  triglycerides?: string;
-  hypertension?: boolean;
-  foodIntolerances?: string;
-  digestiveIssues?: string;
-  additionalHealthInfo?: string;
-  familyHypertension?: boolean;
-  familyDiabetes?: boolean;
-}
-
 export interface DailyLog {
-  date: string; // YYYY-MM-DD
+  date: string;
   meals: MealLog[];
   waterGlasses: number;
   streakDay: number;
   eatsPoints: number;
-}
-
-export interface ReminderTimes {
-  breakfast: string;
-  lunch: string;
-  dinner: string;
-  snack: string;
 }
 
 export interface UserSettings {
@@ -70,12 +50,15 @@ export interface UserSettings {
   vibration: boolean;
   animations: boolean;
   motivationalMessages: boolean;
-  audioExercises: boolean;
-  email?: string;
-  phone?: string;
-  password?: string;
-  reminderTime?: string;
   newsNotifications: boolean;
+  audioExercises: false,
+}
+
+export interface HealthData {
+  weight: number;
+  height: number;
+  bloodPressure: string;
+  cholesterol: number;
 }
 
 export interface UserState {
@@ -84,8 +67,8 @@ export interface UserState {
   dailyLogs: DailyLog[];
   currentStreak: number;
   totalEatsPoints: number;
+  settings: UserSettings;
   healthData?: HealthData;
-  settings?: UserSettings;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -94,10 +77,11 @@ export interface UserContextType {
   user: UserState;
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
   updateNutritionGoals: (goals: Partial<NutritionGoals>) => Promise<void>;
+  updateHealthData: (data: Partial<HealthData>) => Promise<void>;
   updateSettings: (settings: Partial<UserSettings>) => Promise<void>;
-  updateHealthData?: (data: Partial<HealthData>) => Promise<void>;
-  logMeal: (meal: MealLog) => Promise<void>;
+  logMeal: (meal: MealLog>) => Promise<void>;
   incrementWater: () => Promise<void>;
+  decrementWater: () => Promise<void>;
   getTodayLog: () => DailyLog;
   getDailyCalories: () => number;
   getDailyProtein: () => number;

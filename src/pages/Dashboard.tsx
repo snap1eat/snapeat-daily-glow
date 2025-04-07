@@ -6,9 +6,8 @@ import { ProgressCircle } from '@/components/ProgressCircle';
 import { MealIndicator } from '@/components/MealIndicator';
 import { PineappleMascot } from '@/components/PineappleMascot';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Droplet, AlertTriangle } from 'lucide-react';
+import { Droplet, AlertTriangle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { MacroDistributionChart } from '@/components/MacroDistributionChart';
 
 const Dashboard = () => {
   const { 
@@ -19,7 +18,8 @@ const Dashboard = () => {
     getDailyCarbs, 
     getDailyFat,
     getTodayMealsByType,
-    incrementWater 
+    incrementWater,
+    decrementWater
   } = useUser();
   const { toast } = useToast();
   const todayLog = getTodayLog();
@@ -35,6 +35,12 @@ const Dashboard = () => {
   
   // Determine if any nutrient exceeds the recommended limit (>110%)
   const hasExcess = caloriePercentage > 110 || proteinPercentage > 110 || carbsPercentage > 110 || fatPercentage > 110;
+  
+  // Calculate excess percentages
+  const calorieExcess = caloriePercentage > 100 ? `+${caloriePercentage - 100}%` : '';
+  const proteinExcess = proteinPercentage > 100 ? `+${proteinPercentage - 100}%` : '';
+  const carbsExcess = carbsPercentage > 100 ? `+${carbsPercentage - 100}%` : '';
+  const fatExcess = fatPercentage > 100 ? `+${fatPercentage - 100}%` : '';
   
   // Check if meals have been logged
   const breakfastMeals = getTodayMealsByType('breakfast');
@@ -80,6 +86,15 @@ const Dashboard = () => {
     }
   };
   
+  const handleRemoveWater = () => {
+    if (todayLog.waterGlasses > 0) {
+      decrementWater();
+      toast({
+        description: `Vaso de agua eliminado: ${todayLog.waterGlasses} de 8 vasos`,
+      });
+    }
+  };
+  
   // Get personalized recommendation
   const getDailyRecommendation = () => {
     if (breakfastMeals.length === 0) {
@@ -104,10 +119,20 @@ const Dashboard = () => {
   // Show excess alert message if there's an excess
   useEffect(() => {
     if (hasExcess) {
+      // Create detailed excess message
+      let excessDetails = '';
+      if (caloriePercentage > 110) excessDetails += `Calorías: ${calorieExcess}, `;
+      if (proteinPercentage > 110) excessDetails += `Proteína: ${proteinExcess}, `;
+      if (carbsPercentage > 110) excessDetails += `Carbohidratos: ${carbsExcess}, `;
+      if (fatPercentage > 110) excessDetails += `Grasas: ${fatExcess}, `;
+      
+      // Remove trailing comma and space
+      excessDetails = excessDetails.replace(/, $/, '');
+      
       toast({
         variant: "destructive",
         title: "¡Atención!",
-        description: "Has excedido algunas de tus metas nutricionales diarias.",
+        description: `Has excedido algunas de tus metas nutricionales diarias. ${excessDetails}`,
         action: <AlertTriangle className="h-5 w-5" />
       });
     }
@@ -133,10 +158,6 @@ const Dashboard = () => {
             />
           </div>
           
-          <div className="flex justify-center mt-2 mb-4">
-            <MacroDistributionChart showAlert={hasExcess} />
-          </div>
-          
           <div className="grid grid-cols-3 gap-2 mt-4">
             <div className="flex flex-col items-center">
               <div className="text-sm font-medium">Proteínas</div>
@@ -146,7 +167,10 @@ const Dashboard = () => {
                   style={{ '--progress-width': `${Math.min(proteinPercentage, 100)}%` } as React.CSSProperties}
                 ></div>
               </div>
-              <div className="text-xs mt-1">{totalProtein.toFixed(1)}g / {user.nutritionGoals.protein}g</div>
+              <div className="text-xs mt-1">
+                {totalProtein.toFixed(1)}g / {user.nutritionGoals.protein}g
+                {proteinExcess && <span className="text-red-500 ml-1 font-bold">{proteinExcess}</span>}
+              </div>
             </div>
             
             <div className="flex flex-col items-center">
@@ -157,7 +181,10 @@ const Dashboard = () => {
                   style={{ '--progress-width': `${Math.min(carbsPercentage, 100)}%` } as React.CSSProperties} 
                 ></div>
               </div>
-              <div className="text-xs mt-1">{totalCarbs.toFixed(1)}g / {user.nutritionGoals.carbs}g</div>
+              <div className="text-xs mt-1">
+                {totalCarbs.toFixed(1)}g / {user.nutritionGoals.carbs}g
+                {carbsExcess && <span className="text-red-500 ml-1 font-bold">{carbsExcess}</span>}
+              </div>
             </div>
             
             <div className="flex flex-col items-center">
@@ -168,7 +195,10 @@ const Dashboard = () => {
                   style={{ '--progress-width': `${Math.min(fatPercentage, 100)}%` } as React.CSSProperties}
                 ></div>
               </div>
-              <div className="text-xs mt-1">{totalFat.toFixed(1)}g / {user.nutritionGoals.fat}g</div>
+              <div className="text-xs mt-1">
+                {totalFat.toFixed(1)}g / {user.nutritionGoals.fat}g
+                {fatExcess && <span className="text-red-500 ml-1 font-bold">{fatExcess}</span>}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -253,15 +283,27 @@ const Dashboard = () => {
               </div>
             </div>
             
-            <Button 
-              onClick={handleAddWater} 
-              variant="outline"
-              disabled={todayLog.waterGlasses >= 8}
-              className="flex items-center gap-2"
-            >
-              <Droplet className="h-4 w-4" />
-              Agregar vaso de agua
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleAddWater} 
+                variant="outline"
+                disabled={todayLog.waterGlasses >= 8}
+                className="flex items-center gap-2"
+              >
+                <Droplet className="h-4 w-4" />
+                Agregar vaso
+              </Button>
+              
+              <Button 
+                onClick={handleRemoveWater} 
+                variant="outline"
+                disabled={todayLog.waterGlasses <= 0}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Eliminar vaso
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

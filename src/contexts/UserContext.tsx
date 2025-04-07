@@ -1,4 +1,3 @@
-
 import { createContext, useContext, ReactNode } from 'react';
 import { StorageService } from '../services/storage-service';
 import { supabase } from '@/integrations/supabase/client';
@@ -338,6 +337,75 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const decrementWater = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      if (!user.isAuthenticated) {
+        const updatedLogs = user.dailyLogs.map(log => {
+          if (log.date === today && log.waterGlasses > 0) {
+            return {
+              ...log,
+              waterGlasses: log.waterGlasses - 1,
+            };
+          }
+          return log;
+        });
+
+        setUser(prev => ({
+          ...prev,
+          dailyLogs: updatedLogs,
+        }));
+        
+        const userData = { ...user, dailyLogs: updatedLogs };
+        StorageService.set('snapeat_user', JSON.stringify(userData));
+        
+        return;
+      }
+      
+      const userId = await UserService.getCurrentUserId();
+      
+      const { data: logData, error: logError } = await supabase
+        .from('daily_logs')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('date', today)
+        .maybeSingle();
+      
+      if (logError && logError.code !== 'PGRST116') throw logError;
+      
+      const currentWaterIntake = logData?.water_intake || 0;
+      if (currentWaterIntake > 0) {
+        const newWaterIntake = currentWaterIntake - 1;
+        
+        await UserService.updateWaterIntake(userId, today, newWaterIntake);
+        
+        const updatedLogs = user.dailyLogs.map(log => {
+          if (log.date === today) {
+            return {
+              ...log,
+              waterGlasses: newWaterIntake,
+            };
+          }
+          return log;
+        });
+
+        setUser(prev => ({
+          ...prev,
+          dailyLogs: updatedLogs,
+        }));
+        
+        console.log("Water intake decremented successfully");
+      }
+    } catch (error) {
+      console.error("Error decrementing water:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el vaso de agua",
+      });
+    }
+  };
+
   const getDailyCalories = (): number => {
     const todayLog = getTodayLog();
     return todayLog.meals.reduce((total, meal) => {
@@ -464,6 +532,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         updateSettings,
         logMeal,
         incrementWater,
+        decrementWater,
         getTodayLog,
         getDailyCalories,
         getDailyProtein,

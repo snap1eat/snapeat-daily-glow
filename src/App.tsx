@@ -3,12 +3,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { UserProvider } from "./contexts/UserContext";
 import Dashboard from "./pages/Dashboard";
 import FoodLog from "./pages/FoodLog";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
+import Auth from "./pages/Auth";
 import Layout from "./components/Layout";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
@@ -16,8 +17,31 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { App as CapApp } from '@capacitor/app';
 import { usePushNotifications } from "./hooks/use-push-notifications";
+import { useUser } from "./contexts/UserContext";
 
 const queryClient = new QueryClient();
+
+// Protected route component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useUser();
+  
+  if (user.isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-snapeat-green mx-auto"></div>
+          <p className="mt-4 text-snapeat-green">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user.isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  return <>{children}</>;
+};
 
 const AppInit = () => {
   // Inicializar plugins de Capacitor
@@ -61,10 +85,39 @@ const AppInit = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Layout><Dashboard /></Layout>} />
-      <Route path="/food-log" element={<Layout><FoodLog /></Layout>} />
-      <Route path="/history" element={<Layout><History /></Layout>} />
-      <Route path="/profile" element={<Layout><Profile /></Layout>} />
+      <Route path="/auth" element={<Auth />} />
+      <Route 
+        path="/" 
+        element={
+          <ProtectedRoute>
+            <Layout><Dashboard /></Layout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/food-log" 
+        element={
+          <ProtectedRoute>
+            <Layout><FoodLog /></Layout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/history" 
+        element={
+          <ProtectedRoute>
+            <Layout><History /></Layout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute>
+            <Layout><Profile /></Layout>
+          </ProtectedRoute>
+        } 
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

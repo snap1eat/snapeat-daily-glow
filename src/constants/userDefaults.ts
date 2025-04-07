@@ -10,6 +10,7 @@ export const defaultProfile: UserProfile = {
   activityLevel: 'moderate',
   avatar: '',
   username: 'HealthyPineapple123',
+  healthGoals: ['maintain'], // Default health goal
 };
 
 export const defaultNutritionGoals: NutritionGoals = {
@@ -24,6 +25,5 @@ export const defaultSettings: UserSettings = {
   vibration: true,
   animations: true,
   motivationalMessages: true,
-  audioExercises: false,
   newsNotifications: true,
 };

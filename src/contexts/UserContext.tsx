@@ -285,25 +285,14 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       
       const userId = await UserService.getCurrentUserId();
       
-      const { data: logData, error: logError } = await supabase
-        .from('daily_logs')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('date', today)
-        .maybeSingle();
-      
-      if (logError && logError.code !== 'PGRST116') throw logError;
-      
-      const currentWaterIntake = logData?.water_intake || 0;
-      const newWaterIntake = Math.min(currentWaterIntake + 1, 8);
-      
-      await UserService.updateWaterIntake(userId, today, newWaterIntake);
+      // Using the new water logs service
+      await UserService.incrementWaterIntake(userId, today);
       
       const updatedLogs = user.dailyLogs.map(log => {
         if (log.date === today) {
           return {
             ...log,
-            waterGlasses: newWaterIntake,
+            waterGlasses: Math.min(log.waterGlasses + 1, 8),
           };
         }
         return log;
@@ -352,38 +341,25 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       
       const userId = await UserService.getCurrentUserId();
       
-      const { data: logData, error: logError } = await supabase
-        .from('daily_logs')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('date', today)
-        .maybeSingle();
+      // Using the new water logs service
+      await UserService.decrementWaterIntake(userId, today);
       
-      if (logError && logError.code !== 'PGRST116') throw logError;
-      
-      const currentWaterIntake = logData?.water_intake || 0;
-      if (currentWaterIntake > 0) {
-        const newWaterIntake = currentWaterIntake - 1;
-        
-        await UserService.updateWaterIntake(userId, today, newWaterIntake);
-        
-        const updatedLogs = user.dailyLogs.map(log => {
-          if (log.date === today) {
-            return {
-              ...log,
-              waterGlasses: newWaterIntake,
-            };
-          }
-          return log;
-        });
+      const updatedLogs = user.dailyLogs.map(log => {
+        if (log.date === today && log.waterGlasses > 0) {
+          return {
+            ...log,
+            waterGlasses: log.waterGlasses - 1,
+          };
+        }
+        return log;
+      });
 
-        setUser(prev => ({
-          ...prev,
-          dailyLogs: updatedLogs,
-        }));
-        
-        console.log("Water intake decremented successfully");
-      }
+      setUser(prev => ({
+        ...prev,
+        dailyLogs: updatedLogs,
+      }));
+      
+      console.log("Water intake decremented successfully");
     } catch (error) {
       console.error("Error decrementing water:", error);
       toast({

@@ -206,6 +206,8 @@ export type Database = {
       meals: {
         Row: {
           created_at: string | null
+          date: string | null
+          foods: Json | null
           id: string
           image_url: string | null
           input_method: string | null
@@ -223,6 +225,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          date?: string | null
+          foods?: Json | null
           id?: string
           image_url?: string | null
           input_method?: string | null
@@ -240,6 +244,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          date?: string | null
+          foods?: Json | null
           id?: string
           image_url?: string | null
           input_method?: string | null
@@ -362,6 +368,53 @@ export type Database = {
           weight?: number | null
         }
         Relationships: []
+      }
+      user_goals: {
+        Row: {
+          created_at: string | null
+          current_value: number | null
+          description: string
+          goal_type: string
+          id: string
+          is_achieved: boolean | null
+          target_date: string | null
+          target_value: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_value?: number | null
+          description: string
+          goal_type: string
+          id?: string
+          is_achieved?: boolean | null
+          target_date?: string | null
+          target_value?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_value?: number | null
+          description?: string
+          goal_type?: string
+          id?: string
+          is_achieved?: boolean | null
+          target_date?: string | null
+          target_value?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_habits: {
         Row: {
@@ -486,6 +539,41 @@ export type Database = {
             foreignKeyName: "user_settings_id_fkey"
             columns: ["id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      water_logs: {
+        Row: {
+          created_at: string | null
+          date: string
+          glasses: number
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string
+          glasses?: number
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          glasses?: number
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "water_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },

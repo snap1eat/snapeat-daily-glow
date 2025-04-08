@@ -131,7 +131,7 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
     .insert({
       user_id: userId,
       meal_type: spanishMealType,
-      total_quantity: totalQuantity, // Using total_quantity instead of cantidad
+      total_quantity: totalQuantity,
       total_calories: totalCalories,
       total_protein: totalProtein,
       total_carbs: totalCarbs,
@@ -375,7 +375,7 @@ export const fetchUserMeals = async (userId: string, days = 30) => {
     return mealsData.map((meal: any) => {
       // Convert the JSONB foods back to Food[] format
       const mealFoods = meal.foods as any[];
-      const foods = mealFoods.map((item: any) => ({
+      const foods = mealFoods ? mealFoods.map((item: any) => ({
         id: crypto.randomUUID(),
         name: item.name,
         quantity: item.quantity,
@@ -386,7 +386,7 @@ export const fetchUserMeals = async (userId: string, days = 30) => {
         fiber: item.fiber,
         sodium: item.sodium,
         sugar: item.sugar
-      }));
+      })) : [];
       
       // Convert Spanish meal type back to English
       const mealTypeMapping: Record<string, string> = {

@@ -102,12 +102,35 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
   const totalSugar = meal.foods.reduce((sum, food) => sum + (food.sugar || 0), 0);
   const totalQuantity = meal.foods.reduce((sum, food) => sum + food.quantity, 0);
   
+  // Convert meal.type to Spanish format
+  const mealTypeMapping: Record<string, string> = {
+    'breakfast': 'desayuno',
+    'lunch': 'almuerzo',
+    'dinner': 'cena',
+    'snack': 'snack'
+  };
+  
+  const spanishMealType = mealTypeMapping[meal.type] || meal.type;
+  
+  // Convert Food[] to JSONB format
+  const foodsJson = meal.foods.map(food => ({
+    name: food.name,
+    quantity: food.quantity,
+    calories: food.calories,
+    protein: food.protein,
+    carbs: food.carbs,
+    fat: food.fat,
+    fiber: food.fiber || 0,
+    sodium: food.sodium || 0,
+    sugar: food.sugar || 0
+  }));
+  
   const { data: mealData, error: mealError } = await supabase
     .from('meals')
     .insert({
       user_id: userId,
-      meal_type: meal.type,
-      total_quantity: totalQuantity,
+      meal_type: spanishMealType,
+      cantidad: totalQuantity,
       total_calories: totalCalories,
       total_protein: totalProtein,
       total_carbs: totalCarbs,
@@ -115,69 +138,85 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
       total_fiber: totalFiber,
       total_sodium: totalSodium,
       total_sugar: totalSugar,
+      foods: foodsJson,
       image_url: meal.photo,
       input_method: 'manual',
-      created_at: meal.timestamp.toISOString(),
+      date: meal.timestamp.toISOString().split('T')[0],
+      created_at: meal.timestamp.toISOString()
     })
     .select()
     .single();
   
   if (mealError) throw mealError;
   
-  // Modificamos esta parte para no usar food_item_id y evitar el error de clave foránea
-  const mealFoods = meal.foods.map(food => ({
-    meal_id: mealData.id,
-    food_item_id: null, // Cambiamos a null para evitar el error de clave foránea
-    name: food.name,
-    quantity: food.quantity,
-    calories: food.calories,
-    protein: food.protein,
-    carbs: food.carbs,
-    fats: food.fat,
-    fiber: food.fiber,
-    sodium: food.sodium,
-    sugar: food.sugar,
-  }));
-  
-  const { error: foodsError } = await supabase
-    .from('meal_foods')
-    .insert(mealFoods);
-  
-  if (foodsError) throw foodsError;
-  
   return mealData;
 };
 
-export const updateDailyLog = async (userId: string, date: string, data: any) => {
-  const { data: existingLog, error: logCheckError } = await supabase
-    .from('daily_logs')
+export const updateWaterIntake = async (userId: string, date: string, glasses: number) => {
+  // First check if there's a record for this date
+  const { data: existingLog, error: fetchError } = await supabase
+    .from('water_logs')
     .select('*')
     .eq('user_id', userId)
     .eq('date', date)
     .maybeSingle();
   
-  if (logCheckError && logCheckError.code !== 'PGRST116') throw logCheckError;
+  if (fetchError) throw fetchError;
   
-  if (!existingLog) {
-    const { error: createLogError } = await supabase
-      .from('daily_logs')
-      .insert({
-        user_id: userId,
-        date,
-        ...data
-      });
-    
-    if (createLogError) throw createLogError;
-  } else {
-    const { error: updateLogError } = await supabase
-      .from('daily_logs')
+  if (existingLog) {
+    // Update existing record
+    const { error: updateError } = await supabase
+      .from('water_logs')
       .update({
-        ...data,
-        updated_at: new Date().toISOString(),
+        glasses,
+        updated_at: new Date().toISOString()
       })
       .eq('id', existingLog.id);
     
-    if (updateLogError) throw updateLogError;
+    if (updateError) throw updateError;
+  } else {
+    // Insert new record
+    const { error: createError } = await supabase
+      .from('water_logs')
+      .insert({
+        user_id: userId,
+        date,
+        glasses,
+      });
+    
+    if (createError) throw createError;
+  }
+};
+
+export const incrementWaterIntake = async (userId: string, date: string) => {
+  // Get current glasses count
+  const { data: existingLog, error: fetchError } = await supabase
+    .from('water_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .maybeSingle();
+  
+  if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+  
+  const currentGlasses = existingLog ? existingLog.glasses : 0;
+  await updateWaterIntake(userId, date, currentGlasses + 1);
+};
+
+export const decrementWaterIntake = async (userId: string, date: string) => {
+  // Get current glasses count
+  const { data: existingLog, error: fetchError } = await supabase
+    .from('water_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .maybeSingle();
+  
+  if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+  
+  const currentGlasses = existingLog ? existingLog.glasses : 0;
+  if (currentGlasses > 0) {
+    await updateWaterIntake(userId, date, currentGlasses - 1);
   }
 };
 
@@ -186,68 +225,223 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
   startDate.setDate(startDate.getDate() - days);
   const startDateStr = startDate.toISOString().split('T')[0];
   
-  const { data: logsData, error: logsError } = await supabase
-    .from('daily_logs')
+  // Get meals data
+  const { data: mealsData, error: mealsError } = await supabase
+    .from('meals')
     .select('*')
     .eq('user_id', userId)
     .gte('date', startDateStr)
     .order('date', { ascending: false });
 
-  if (logsError) throw logsError;
+  if (mealsError) throw mealsError;
   
-  return logsData || [];
+  // Get water logs data
+  const { data: waterData, error: waterError } = await supabase
+    .from('water_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('date', startDateStr)
+    .order('date', { ascending: false });
+
+  if (waterError) throw waterError;
+  
+  // Process and combine the data
+  const logsByDate: Record<string, any> = {};
+  
+  // Initialize with dates from the past 30 days
+  for (let i = 0; i < days; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    
+    logsByDate[dateStr] = {
+      date: dateStr,
+      waterGlasses: 0,
+      meals: [],
+      streakDay: 0,
+      eatsPoints: 0
+    };
+  }
+  
+  // Add water data
+  waterData?.forEach(water => {
+    const dateStr = water.date;
+    if (logsByDate[dateStr]) {
+      logsByDate[dateStr].waterGlasses = water.glasses;
+    }
+  });
+  
+  // Add meals data
+  mealsData?.forEach(meal => {
+    const dateStr = meal.date;
+    if (logsByDate[dateStr]) {
+      // Convert the JSONB foods back to Food[] format
+      const foods = meal.foods.map((item: any) => ({
+        id: crypto.randomUUID(),
+        name: item.name,
+        quantity: item.quantity,
+        calories: item.calories,
+        protein: item.protein,
+        carbs: item.carbs,
+        fat: item.fat || item.fats, // Handle both potential property names
+        fiber: item.fiber,
+        sodium: item.sodium,
+        sugar: item.sugar
+      }));
+      
+      // Convert Spanish meal type back to English
+      const mealTypeMapping: Record<string, string> = {
+        'desayuno': 'breakfast',
+        'almuerzo': 'lunch',
+        'cena': 'dinner',
+        'snack': 'snack'
+      };
+      
+      const englishMealType = mealTypeMapping[meal.meal_type] || meal.meal_type;
+      
+      logsByDate[dateStr].meals.push({
+        id: meal.id,
+        type: englishMealType as any,
+        foods,
+        timestamp: new Date(meal.created_at),
+        photo: meal.image_url
+      });
+      
+      logsByDate[dateStr].eatsPoints += 10;
+    }
+  });
+  
+  // Calculate streak
+  const dateKeys = Object.keys(logsByDate).sort().reverse();
+  let consecutiveDays = 0;
+  
+  for (const dateStr of dateKeys) {
+    const log = logsByDate[dateStr];
+    
+    if (log.meals.length > 0 || log.waterGlasses > 0) {
+      consecutiveDays++;
+      log.streakDay = consecutiveDays;
+    } else {
+      break;
+    }
+  }
+  
+  return Object.values(logsByDate);
 };
 
 export const fetchUserMeals = async (userId: string, days = 30) => {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
-  const startDateStr = startDate.toISOString();
+  const startDateStr = startDate.toISOString().split('T')[0];
   
   const { data: mealsData, error: mealsError } = await supabase
     .from('meals')
-    .select('*, meal_foods(*)')
+    .select('*')
     .eq('user_id', userId)
-    .gte('created_at', startDateStr)
+    .gte('date', startDateStr)
     .order('created_at', { ascending: false });
 
   if (mealsError) throw mealsError;
   
-  return mealsData || [];
+  // Convert the meals data to the expected format
+  return mealsData.map(meal => {
+    // Convert the JSONB foods back to Food[] format
+    const foods = meal.foods.map((item: any) => ({
+      id: crypto.randomUUID(),
+      name: item.name,
+      quantity: item.quantity,
+      calories: item.calories,
+      protein: item.protein,
+      carbs: item.carbs,
+      fat: item.fat || item.fats, // Handle both property names
+      fiber: item.fiber,
+      sodium: item.sodium,
+      sugar: item.sugar
+    }));
+    
+    // Convert Spanish meal type back to English
+    const mealTypeMapping: Record<string, string> = {
+      'desayuno': 'breakfast',
+      'almuerzo': 'lunch',
+      'cena': 'dinner',
+      'snack': 'snack'
+    };
+    
+    const englishMealType = mealTypeMapping[meal.meal_type] || meal.meal_type;
+    
+    return {
+      id: meal.id,
+      user_id: meal.user_id,
+      meal_type: englishMealType,
+      total_calories: meal.total_calories,
+      total_protein: meal.total_protein,
+      total_carbs: meal.total_carbs,
+      total_fats: meal.total_fats,
+      foods,
+      created_at: meal.created_at
+    };
+  });
 };
 
-export const updateWaterIntake = async (userId: string, date: string, waterIntake: number) => {
-  const { data: logData, error: logError } = await supabase
-    .from('daily_logs')
+// Save a user goal
+export const saveUserGoal = async (userId: string, goalType: string, description: string, targetValue?: number, targetDate?: Date) => {
+  const { data, error } = await supabase
+    .from('user_goals')
+    .insert({
+      user_id: userId,
+      goal_type: goalType,
+      description,
+      target_value: targetValue,
+      target_date: targetDate ? targetDate.toISOString().split('T')[0] : null,
+      current_value: 0
+    })
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return data;
+};
+
+// Get user goals
+export const getUserGoals = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('user_goals')
     .select('*')
     .eq('user_id', userId)
-    .eq('date', date)
-    .maybeSingle();
+    .order('created_at', { ascending: false });
   
-  if (logError && logError.code !== 'PGRST116') throw logError;
+  if (error) throw error;
+  return data || [];
+};
+
+// Update a user goal
+export const updateUserGoal = async (goalId: string, updates: Partial<{
+  description: string;
+  target_value: number;
+  current_value: number;
+  target_date: string;
+  is_achieved: boolean;
+}>) => {
+  const { data, error } = await supabase
+    .from('user_goals')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', goalId)
+    .select()
+    .single();
   
-  if (logData) {
-    const { error: updateError } = await supabase
-      .from('daily_logs')
-      .update({
-        water_intake: waterIntake,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', logData.id);
-    
-    if (updateError) throw updateError;
-  } else {
-    const { error: createError } = await supabase
-      .from('daily_logs')
-      .insert({
-        user_id: userId,
-        date,
-        water_intake: waterIntake,
-        total_calories: 0,
-        total_protein: 0,
-        total_carbs: 0,
-        total_fats: 0,
-      });
-    
-    if (createError) throw createError;
-  }
+  if (error) throw error;
+  return data;
+};
+
+// Delete a user goal
+export const deleteUserGoal = async (goalId: string) => {
+  const { error } = await supabase
+    .from('user_goals')
+    .delete()
+    .eq('id', goalId);
+  
+  if (error) throw error;
 };

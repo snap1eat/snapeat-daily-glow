@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { StorageService } from '@/services/storage-service';
 import { supabase } from '@/integrations/supabase/client';
@@ -112,109 +113,27 @@ export const useUserData = () => {
           newsNotifications: settingsData.notification_news,
         } : defaultSettings;
         
-        // Fetch logs and meals for the past 30 days
+        // Fetch user logs with the new service function
         const logsData = await UserService.fetchUserLogs(userId);
-        const mealsData = await UserService.fetchUserMeals(userId);
         
-        // Process the logs and meals
-        const today = new Date().toISOString().split('T')[0];
-        const dailyLogs: DailyLog[] = [];
+        // Calculate total points and streaks
+        let totalPoints = 0;
+        let currentStreak = 0;
         
-        const todayLog: DailyLog = {
-          date: today,
-          meals: [],
-          waterGlasses: 0,
-          streakDay: 1,
-          eatsPoints: 0,
-        };
-        
-        if (logsData && logsData.length > 0) {
-          logsData.forEach(log => {
-            const logDate = log.date;
-            const existingLog = dailyLogs.find(l => l.date === logDate);
-            
-            if (existingLog) {
-              existingLog.waterGlasses = log.water_intake || 0;
-            } else {
-              dailyLogs.push({
-                date: logDate,
-                meals: [],
-                waterGlasses: log.water_intake || 0,
-                streakDay: 0,
-                eatsPoints: 0,
-              });
-            }
-          });
-        }
-        
-        if (!dailyLogs.find(l => l.date === today)) {
-          dailyLogs.push(todayLog);
-        }
-        
-        if (mealsData && mealsData.length > 0) {
-          mealsData.forEach(meal => {
-            const mealDate = new Date(meal.created_at!).toISOString().split('T')[0];
-            const logForDate = dailyLogs.find(l => l.date === mealDate);
-            
-            if (logForDate) {
-              const foods: Food[] = meal.meal_foods.map((food: any) => ({
-                id: food.id,
-                name: food.name,
-                quantity: food.quantity,
-                calories: food.calories,
-                protein: food.protein,
-                carbs: food.carbs,
-                fat: food.fats,
-                sodium: food.sodium,
-                fiber: food.fiber,
-                sugar: food.sugar,
-              }));
-              
-              logForDate.meals.push({
-                id: meal.id,
-                type: meal.meal_type as any,
-                foods,
-                timestamp: new Date(meal.created_at!),
-                photo: meal.image_url || undefined,
-              });
-              
-              logForDate.eatsPoints += 10;
-            }
-          });
-        }
-        
-        // Calculate streak
-        let streak = 0;
-        let currentDate = new Date();
-        let consecutiveDays = 0;
-        
-        dailyLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        for (let i = 0; i < 30; i++) {
-          const dateString = currentDate.toISOString().split('T')[0];
-          const logForDate = dailyLogs.find(l => l.date === dateString);
-          
-          if (logForDate && (logForDate.meals.length > 0 || logForDate.waterGlasses > 0)) {
-            consecutiveDays++;
-            logForDate.streakDay = consecutiveDays;
-          } else {
-            break;
+        logsData.forEach((log: DailyLog) => {
+          totalPoints += log.eatsPoints;
+          if (log.streakDay > currentStreak) {
+            currentStreak = log.streakDay;
           }
-          
-          currentDate.setDate(currentDate.getDate() - 1);
-        }
-        
-        streak = consecutiveDays;
-        
-        const totalPoints = dailyLogs.reduce((sum, log) => sum + log.eatsPoints, 0);
+        });
         
         setUser(prev => ({
           ...prev,
           profile: updatedProfile,
           nutritionGoals: updatedGoals,
           settings: updatedSettings,
-          dailyLogs,
-          currentStreak: streak,
+          dailyLogs: logsData as DailyLog[],
+          currentStreak,
           totalEatsPoints: totalPoints,
           isAuthenticated: true,
           isLoading: false,

@@ -265,49 +265,54 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
   
   // Add water data
   waterData?.forEach(water => {
-    const dateStr = water.date;
-    if (logsByDate[dateStr]) {
-      logsByDate[dateStr].waterGlasses = water.glasses;
+    if (water && typeof water === 'object' && 'date' in water) {
+      const dateStr = water.date as string;
+      if (logsByDate[dateStr]) {
+        logsByDate[dateStr].waterGlasses = water.glasses as number;
+      }
     }
   });
   
   // Add meals data
   mealsData?.forEach(meal => {
-    const dateStr = meal.date;
-    if (logsByDate[dateStr]) {
-      // Convert the JSONB foods back to Food[] format
-      const foods = meal.foods.map((item: any) => ({
-        id: crypto.randomUUID(),
-        name: item.name,
-        quantity: item.quantity,
-        calories: item.calories,
-        protein: item.protein,
-        carbs: item.carbs,
-        fat: item.fat || item.fats, // Handle both potential property names
-        fiber: item.fiber,
-        sodium: item.sodium,
-        sugar: item.sugar
-      }));
-      
-      // Convert Spanish meal type back to English
-      const mealTypeMapping: Record<string, string> = {
-        'desayuno': 'breakfast',
-        'almuerzo': 'lunch',
-        'cena': 'dinner',
-        'snack': 'snack'
-      };
-      
-      const englishMealType = mealTypeMapping[meal.meal_type] || meal.meal_type;
-      
-      logsByDate[dateStr].meals.push({
-        id: meal.id,
-        type: englishMealType as any,
-        foods,
-        timestamp: new Date(meal.created_at),
-        photo: meal.image_url
-      });
-      
-      logsByDate[dateStr].eatsPoints += 10;
+    if (meal && typeof meal === 'object' && 'date' in meal && 'foods' in meal) {
+      const dateStr = meal.date as string;
+      if (logsByDate[dateStr]) {
+        // Convert the JSONB foods back to Food[] format
+        const mealFoods = meal.foods as any[];
+        const foods = mealFoods.map((item: any) => ({
+          id: crypto.randomUUID(),
+          name: item.name,
+          quantity: item.quantity,
+          calories: item.calories,
+          protein: item.protein,
+          carbs: item.carbs,
+          fat: item.fat || item.fats, // Handle both potential property names
+          fiber: item.fiber,
+          sodium: item.sodium,
+          sugar: item.sugar
+        }));
+        
+        // Convert Spanish meal type back to English
+        const mealTypeMapping: Record<string, string> = {
+          'desayuno': 'breakfast',
+          'almuerzo': 'lunch',
+          'cena': 'dinner',
+          'snack': 'snack'
+        };
+        
+        const englishMealType = mealTypeMapping[meal.meal_type as string] || meal.meal_type;
+        
+        logsByDate[dateStr].meals.push({
+          id: meal.id,
+          type: englishMealType as any,
+          foods,
+          timestamp: new Date(meal.created_at as string),
+          photo: meal.image_url
+        });
+        
+        logsByDate[dateStr].eatsPoints += 10;
+      }
     }
   });
   
@@ -346,7 +351,8 @@ export const fetchUserMeals = async (userId: string, days = 30) => {
   // Convert the meals data to the expected format
   return mealsData.map(meal => {
     // Convert the JSONB foods back to Food[] format
-    const foods = meal.foods.map((item: any) => ({
+    const mealFoods = meal.foods as any[];
+    const foods = mealFoods.map((item: any) => ({
       id: crypto.randomUUID(),
       name: item.name,
       quantity: item.quantity,
@@ -367,7 +373,7 @@ export const fetchUserMeals = async (userId: string, days = 30) => {
       'snack': 'snack'
     };
     
-    const englishMealType = mealTypeMapping[meal.meal_type] || meal.meal_type;
+    const englishMealType = mealTypeMapping[meal.meal_type as string] || meal.meal_type;
     
     return {
       id: meal.id,

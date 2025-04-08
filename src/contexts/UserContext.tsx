@@ -229,20 +229,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       // Save meal to database
       const mealData = await UserService.saveMeal(userId, meal);
       
-      // Update daily log with new nutrition totals
-      const totalCalories = meal.foods.reduce((sum, food) => sum + food.calories, 0);
-      const totalProtein = meal.foods.reduce((sum, food) => sum + food.protein, 0);
-      const totalCarbs = meal.foods.reduce((sum, food) => sum + food.carbs, 0);
-      const totalFats = meal.foods.reduce((sum, food) => sum + food.fat, 0);
-      
-      await UserService.updateDailyLog(userId, today, {
-        total_calories: totalCalories,
-        total_protein: totalProtein,
-        total_carbs: totalCarbs,
-        total_fats: totalFats,
-      });
-      
-      // Update local state
+      // Update local state with the saved meal data
       const updatedLogs = user.dailyLogs.map(log => {
         if (log.date === today) {
           return {

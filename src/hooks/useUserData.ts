@@ -113,7 +113,7 @@ export const useUserData = () => {
           newsNotifications: settingsData.notification_news,
         } : defaultSettings;
         
-        // Fetch user logs with the new service function
+        // Fetch user logs with the updated service function
         const logsData = await UserService.fetchUserLogs(userId);
         
         // Calculate total points and streaks

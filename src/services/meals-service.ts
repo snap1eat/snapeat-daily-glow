@@ -15,15 +15,18 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
     
     // Definir un mapa para traducir los tipos de comida de inglés a español
     const mealTypeMapping: Record<string, string> = {
-      'breakfast': 'desayuno',
-      'lunch': 'almuerzo',
-      'dinner': 'cena',
+      'breakfast': 'breakfast',
+      'lunch': 'lunch',
+      'dinner': 'dinner',
       'snack': 'snack',
-      'drink': 'bebida'
+      'drink': 'drink'
     };
     
-    // Asegurarse de que el tipo de comida esté en español
-    const spanishMealType = mealTypeMapping[meal.type] || 'snack';
+    // Asegurarse de que el tipo de comida sea el correcto según la base de datos
+    const correctMealType = mealTypeMapping[meal.type] || 'snack';
+    
+    console.log('Meal type from frontend:', meal.type);
+    console.log('Converted meal type for database:', correctMealType);
     
     const foodsJson = meal.foods.map(food => ({
       name: food.name,
@@ -38,13 +41,13 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
     }));
     
     // Verificar los datos antes de la inserción
-    console.log('Saving meal with type:', spanishMealType);
+    console.log('Saving meal with type:', correctMealType);
     
     const { data: mealData, error: mealError } = await supabase
       .from('meals')
       .insert({
         user_id: userId,
-        meal_type: spanishMealType,
+        meal_type: correctMealType,
         total_quantity: totalQuantity,
         total_calories: totalCalories,
         total_protein: totalProtein,
@@ -104,21 +107,10 @@ export const fetchUserMeals = async (userId: string, days = 30) => {
         sugar: item.sugar
       })) : [];
       
-      // Mapa para traducir los tipos de comida de español a inglés
-      const mealTypeMapping: Record<string, string> = {
-        'desayuno': 'breakfast',
-        'almuerzo': 'lunch',
-        'cena': 'dinner',
-        'snack': 'snack',
-        'bebida': 'drink'
-      };
-      
-      const englishMealType = mealTypeMapping[meal.meal_type as string] || meal.meal_type;
-      
       return {
         id: meal.id,
         user_id: meal.user_id,
-        meal_type: englishMealType,
+        meal_type: meal.meal_type,
         total_calories: meal.total_calories,
         total_protein: meal.total_protein,
         total_carbs: meal.total_carbs,

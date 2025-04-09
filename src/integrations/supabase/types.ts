@@ -9,53 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      daily_logs: {
-        Row: {
-          created_at: string | null
-          date: string
-          id: string
-          total_calories: number | null
-          total_carbs: number | null
-          total_fats: number | null
-          total_protein: number | null
-          updated_at: string | null
-          user_id: string
-          water_intake: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          date?: string
-          id?: string
-          total_calories?: number | null
-          total_carbs?: number | null
-          total_fats?: number | null
-          total_protein?: number | null
-          updated_at?: string | null
-          user_id: string
-          water_intake?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          date?: string
-          id?: string
-          total_calories?: number | null
-          total_carbs?: number | null
-          total_fats?: number | null
-          total_protein?: number | null
-          updated_at?: string | null
-          user_id?: string
-          water_intake?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "daily_logs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       food_items: {
         Row: {
           barcode: string | null
@@ -140,74 +93,12 @@ export type Database = {
         }
         Relationships: []
       }
-      meal_foods: {
-        Row: {
-          calories: number
-          carbs: number
-          created_at: string | null
-          fats: number
-          fiber: number | null
-          food_item_id: string | null
-          id: string
-          meal_id: string
-          name: string
-          protein: number
-          quantity: number
-          sodium: number | null
-          sugar: number | null
-        }
-        Insert: {
-          calories: number
-          carbs: number
-          created_at?: string | null
-          fats: number
-          fiber?: number | null
-          food_item_id?: string | null
-          id?: string
-          meal_id: string
-          name: string
-          protein: number
-          quantity: number
-          sodium?: number | null
-          sugar?: number | null
-        }
-        Update: {
-          calories?: number
-          carbs?: number
-          created_at?: string | null
-          fats?: number
-          fiber?: number | null
-          food_item_id?: string | null
-          id?: string
-          meal_id?: string
-          name?: string
-          protein?: number
-          quantity?: number
-          sodium?: number | null
-          sugar?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "meal_foods_food_item_id_fkey"
-            columns: ["food_item_id"]
-            isOneToOne: false
-            referencedRelation: "food_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meal_foods_meal_id_fkey"
-            columns: ["meal_id"]
-            isOneToOne: false
-            referencedRelation: "meals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       meals: {
         Row: {
+          cantidad: number
           created_at: string | null
           date: string | null
-          foods: Json | null
+          foods: Json
           id: string
           image_url: string | null
           input_method: string | null
@@ -217,16 +108,15 @@ export type Database = {
           total_fats: number
           total_fiber: number | null
           total_protein: number
-          total_quantity: number
           total_sodium: number | null
           total_sugar: number | null
-          updated_at: string | null
           user_id: string
         }
         Insert: {
+          cantidad: number
           created_at?: string | null
           date?: string | null
-          foods?: Json | null
+          foods?: Json
           id?: string
           image_url?: string | null
           input_method?: string | null
@@ -236,16 +126,15 @@ export type Database = {
           total_fats: number
           total_fiber?: number | null
           total_protein: number
-          total_quantity: number
           total_sodium?: number | null
           total_sugar?: number | null
-          updated_at?: string | null
           user_id: string
         }
         Update: {
+          cantidad?: number
           created_at?: string | null
           date?: string | null
-          foods?: Json | null
+          foods?: Json
           id?: string
           image_url?: string | null
           input_method?: string | null
@@ -255,21 +144,11 @@ export type Database = {
           total_fats?: number
           total_fiber?: number | null
           total_protein?: number
-          total_quantity?: number
           total_sodium?: number | null
           total_sugar?: number | null
-          updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "meals_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       notifications: {
         Row: {

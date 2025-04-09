@@ -15,11 +15,11 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
     
     // Definir un mapa para traducir los tipos de comida de inglés a español
     const mealTypeMapping: Record<string, string> = {
-      'breakfast': 'breakfast',
-      'lunch': 'lunch',
-      'dinner': 'dinner',
+      'breakfast': 'desayuno',
+      'lunch': 'almuerzo',
+      'dinner': 'cena',
       'snack': 'snack',
-      'drink': 'drink'
+      'drink': 'snack'
     };
     
     // Asegurarse de que el tipo de comida sea el correcto según la base de datos
@@ -48,7 +48,7 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
       .insert({
         user_id: userId,
         meal_type: correctMealType,
-        total_quantity: totalQuantity,
+        cantidad: totalQuantity,
         total_calories: totalCalories,
         total_protein: totalProtein,
         total_carbs: totalCarbs,
@@ -92,6 +92,14 @@ export const fetchUserMeals = async (userId: string, days = 30) => {
   
     if (mealsError) throw mealsError;
     
+    // Crear un mapa para traducir los tipos de comida de español a inglés
+    const mealTypeMapping: Record<string, string> = {
+      'desayuno': 'breakfast',
+      'almuerzo': 'lunch',
+      'cena': 'dinner',
+      'snack': 'snack'
+    };
+    
     return mealsData.map((meal: any) => {
       const mealFoods = meal.foods as any[];
       const foods = mealFoods ? mealFoods.map((item: any) => ({
@@ -107,10 +115,13 @@ export const fetchUserMeals = async (userId: string, days = 30) => {
         sugar: item.sugar
       })) : [];
       
+      // Traducir el tipo de comida de español a inglés para la interfaz
+      const englishMealType = mealTypeMapping[meal.meal_type] || 'snack';
+      
       return {
         id: meal.id,
         user_id: meal.user_id,
-        meal_type: meal.meal_type,
+        meal_type: englishMealType,
         total_calories: meal.total_calories,
         total_protein: meal.total_protein,
         total_carbs: meal.total_carbs,

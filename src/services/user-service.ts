@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { DailyLog, Food, MealLog, NutritionGoals, UserProfile, UserSettings } from '@/types/user';
 import { Json } from '@/integrations/supabase/types';
@@ -152,21 +153,20 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
   return mealData;
 };
 
-// Water intake management functions using the new water_logs table
+// Water intake management functions using the RPC functions
 export const updateWaterIntake = async (userId: string, date: string, glasses: number) => {
   try {
     // Check if there's a record for this date
     const { data: existingLog, error: fetchError } = await supabase
-      .rpc('get_water_log', { user_id_param: userId, date_param: date })
-      .single();
+      .rpc('get_water_log', { user_id_param: userId, date_param: date });
     
-    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+    if (fetchError) throw fetchError;
     
-    if (existingLog) {
+    if (existingLog && existingLog.length > 0) {
       // Update existing record
       const { error: updateError } = await supabase
         .rpc('update_water_log', { 
-          log_id_param: existingLog.id, 
+          log_id_param: existingLog[0].id, 
           glasses_param: glasses, 
           updated_at_param: new Date().toISOString()
         });
@@ -193,12 +193,11 @@ export const incrementWaterIntake = async (userId: string, date: string) => {
   try {
     // Get current glasses count
     const { data: existingLog, error: fetchError } = await supabase
-      .rpc('get_water_log', { user_id_param: userId, date_param: date })
-      .single();
+      .rpc('get_water_log', { user_id_param: userId, date_param: date });
     
-    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+    if (fetchError) throw fetchError;
     
-    const currentGlasses = existingLog ? existingLog.glasses : 0;
+    const currentGlasses = existingLog && existingLog.length > 0 ? existingLog[0].glasses : 0;
     await updateWaterIntake(userId, date, currentGlasses + 1);
   } catch (error) {
     console.error("Error incrementing water:", error);
@@ -210,12 +209,11 @@ export const decrementWaterIntake = async (userId: string, date: string) => {
   try {
     // Get current glasses count
     const { data: existingLog, error: fetchError } = await supabase
-      .rpc('get_water_log', { user_id_param: userId, date_param: date })
-      .single();
+      .rpc('get_water_log', { user_id_param: userId, date_param: date });
     
-    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+    if (fetchError) throw fetchError;
     
-    const currentGlasses = existingLog ? existingLog.glasses : 0;
+    const currentGlasses = existingLog && existingLog.length > 0 ? existingLog[0].glasses : 0;
     if (currentGlasses > 0) {
       await updateWaterIntake(userId, date, currentGlasses - 1);
     }
@@ -269,7 +267,7 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
     }
     
     // Add water data
-    if (waterData) {
+    if (waterData && Array.isArray(waterData)) {
       waterData.forEach((water: any) => {
         if (water && typeof water === 'object' && 'date' in water) {
           const dateStr = water.date as string;

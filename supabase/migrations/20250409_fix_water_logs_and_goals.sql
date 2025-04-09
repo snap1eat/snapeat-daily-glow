@@ -1,5 +1,5 @@
 
--- Create stored procedures for water logs
+-- Fix water logs stored procedures
 CREATE OR REPLACE FUNCTION get_water_log(user_id_param UUID, date_param DATE)
 RETURNS TABLE (
   id UUID,

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { DailyLog } from '@/types/user';
 
@@ -25,16 +26,15 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
   
     if (mealsError) throw mealsError;
     
-    // Get water logs using RPC function
-    const { data, error: waterError } = await supabase
-      .rpc('get_water_logs_for_user', { 
-        user_id_param: userId, 
-        start_date_param: startDateStr 
-      });
+    // Get water logs directly from water_logs table
+    const { data: waterData, error: waterError } = await supabase
+      .from('water_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', startDateStr)
+      .order('date', { ascending: false });
   
     if (waterError) throw waterError;
-    
-    const waterData = Array.isArray(data) ? data as WaterLogData[] : [];
     
     const logsByDate: Record<string, any> = {};
     
@@ -53,7 +53,7 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
     }
     
     if (waterData) {
-      waterData.forEach((water: any) => {
+      waterData.forEach((water: WaterLogData) => {
         if (water && typeof water === 'object' && 'date' in water) {
           const dateStr = water.date as string;
           if (logsByDate[dateStr]) {

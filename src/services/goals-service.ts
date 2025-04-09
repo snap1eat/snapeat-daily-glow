@@ -17,17 +17,20 @@ type UserGoal = {
 export const saveUserGoal = async (userId: string, goalType: string, description: string, targetValue?: number, targetDate?: Date) => {
   try {
     const { data, error } = await supabase
-      .rpc('create_user_goal', {
-        user_id_param: userId,
-        goal_type_param: goalType,
-        description_param: description,
-        target_value_param: targetValue,
-        target_date_param: targetDate ? targetDate.toISOString().split('T')[0] : null
-      });
+      .from('user_goals')
+      .insert({
+        user_id: userId,
+        goal_type: goalType,
+        description: description,
+        target_value: targetValue || null,
+        target_date: targetDate ? targetDate.toISOString().split('T')[0] : null
+      })
+      .select()
+      .single();
     
     if (error) throw error;
     
-    return Array.isArray(data) ? data as UserGoal[] : [];
+    return data as UserGoal;
   } catch (error) {
     console.error("Error saving user goal:", error);
     throw error;
@@ -37,13 +40,14 @@ export const saveUserGoal = async (userId: string, goalType: string, description
 export const getUserGoals = async (userId: string) => {
   try {
     const { data, error } = await supabase
-      .rpc('get_user_goals', { 
-        user_id_param: userId 
-      });
+      .from('user_goals')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
     
     if (error) throw error;
     
-    return Array.isArray(data) ? data as UserGoal[] : [];
+    return data as UserGoal[];
   } catch (error) {
     console.error("Error getting user goals:", error);
     throw error;
@@ -58,20 +62,21 @@ export const updateUserGoal = async (goalId: string, updates: Partial<{
   is_achieved: boolean;
 }>) => {
   try {
+    const updateData = {
+      ...updates,
+      updated_at: new Date().toISOString()
+    };
+    
     const { data, error } = await supabase
-      .rpc('update_user_goal', {
-        goal_id_param: goalId,
-        description_param: updates.description,
-        target_value_param: updates.target_value,
-        current_value_param: updates.current_value,
-        target_date_param: updates.target_date,
-        is_achieved_param: updates.is_achieved,
-        updated_at_param: new Date().toISOString()
-      });
+      .from('user_goals')
+      .update(updateData)
+      .eq('id', goalId)
+      .select()
+      .single();
     
     if (error) throw error;
     
-    return Array.isArray(data) ? data as UserGoal[] : [];
+    return data as UserGoal;
   } catch (error) {
     console.error("Error updating user goal:", error);
     throw error;
@@ -81,9 +86,9 @@ export const updateUserGoal = async (goalId: string, updates: Partial<{
 export const deleteUserGoal = async (goalId: string) => {
   try {
     const { error } = await supabase
-      .rpc('delete_user_goal', { 
-        goal_id_param: goalId 
-      });
+      .from('user_goals')
+      .delete()
+      .eq('id', goalId);
     
     if (error) throw error;
   } catch (error) {

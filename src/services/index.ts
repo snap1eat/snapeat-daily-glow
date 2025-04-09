@@ -1,6 +1,5 @@
 
-// This file is maintained for backwards compatibility
-// It re-exports all services from their new locations
+// Re-export all services for easy importing
 export * from './auth-service';
 export * from './profile-service';
 export * from './meals-service';

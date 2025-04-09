@@ -4,7 +4,18 @@ import { supabase } from '@/integrations/supabase/client';
 export const saveUserGoal = async (userId: string, goalType: string, description: string, targetValue?: number, targetDate?: Date) => {
   try {
     const { data, error } = await supabase
-      .rpc('create_user_goal', {
+      .rpc<{
+        id: string;
+        user_id: string;
+        goal_type: string;
+        description: string;
+        target_value: number | null;
+        current_value: number | null;
+        target_date: string | null;
+        is_achieved: boolean;
+        created_at: string;
+        updated_at: string;
+      }[]>('create_user_goal', {
         user_id_param: userId,
         goal_type_param: goalType,
         description_param: description,
@@ -24,7 +35,18 @@ export const saveUserGoal = async (userId: string, goalType: string, description
 export const getUserGoals = async (userId: string) => {
   try {
     const { data, error } = await supabase
-      .rpc('get_user_goals', { 
+      .rpc<{
+        id: string;
+        user_id: string;
+        goal_type: string;
+        description: string;
+        target_value: number | null;
+        current_value: number | null;
+        target_date: string | null;
+        is_achieved: boolean;
+        created_at: string;
+        updated_at: string;
+      }[]>('get_user_goals', { 
         user_id_param: userId 
       });
     
@@ -46,7 +68,18 @@ export const updateUserGoal = async (goalId: string, updates: Partial<{
 }>) => {
   try {
     const { data, error } = await supabase
-      .rpc('update_user_goal', {
+      .rpc<{
+        id: string;
+        user_id: string;
+        goal_type: string;
+        description: string;
+        target_value: number | null;
+        current_value: number | null;
+        target_date: string | null;
+        is_achieved: boolean;
+        created_at: string;
+        updated_at: string;
+      }[]>('update_user_goal', {
         goal_id_param: goalId,
         description_param: updates.description,
         target_value_param: updates.target_value,
@@ -68,7 +101,7 @@ export const updateUserGoal = async (goalId: string, updates: Partial<{
 export const deleteUserGoal = async (goalId: string) => {
   try {
     const { error } = await supabase
-      .rpc('delete_user_goal', { 
+      .rpc<null>('delete_user_goal', { 
         goal_id_param: goalId 
       });
     

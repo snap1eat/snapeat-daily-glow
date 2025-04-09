@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DailyLog } from '@/types/user';
 
@@ -19,7 +18,14 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
     
     // Get water logs using RPC function
     const { data, error: waterError } = await supabase
-      .rpc('get_water_logs_for_user', { 
+      .rpc<{
+        id: string;
+        user_id: string;
+        date: string;
+        glasses: number;
+        created_at: string;
+        updated_at: string;
+      }[]>('get_water_logs_for_user', { 
         user_id_param: userId, 
         start_date_param: startDateStr 
       });

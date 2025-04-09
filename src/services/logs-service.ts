@@ -1,6 +1,14 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DailyLog } from '@/types/user';
+
+type WaterLogData = {
+  id: string;
+  user_id: string;
+  date: string;
+  glasses: number;
+  created_at: string;
+  updated_at: string;
+};
 
 export const fetchUserLogs = async (userId: string, days = 30) => {
   try {
@@ -19,24 +27,14 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
     
     // Get water logs using RPC function
     const { data, error: waterError } = await supabase
-      .rpc<{
-        id: string;
-        user_id: string;
-        date: string;
-        glasses: number;
-        created_at: string;
-        updated_at: string;
-      }[], { 
-        user_id_param: string; 
-        start_date_param: string; 
-      }>('get_water_logs_for_user', { 
+      .rpc('get_water_logs_for_user', { 
         user_id_param: userId, 
         start_date_param: startDateStr 
       });
   
     if (waterError) throw waterError;
     
-    const waterData = Array.isArray(data) ? data : [];
+    const waterData = Array.isArray(data) ? data as WaterLogData[] : [];
     
     const logsByDate: Record<string, any> = {};
     

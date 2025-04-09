@@ -1,35 +1,33 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+type WaterLogData = {
+  id: string;
+  user_id: string;
+  date: string;
+  glasses: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export const updateWaterIntake = async (userId: string, date: string, glasses: number) => {
   try {
     // Check if a water log exists for this date
     const { data, error: fetchError } = await supabase
-      .rpc<{
-        id: string;
-        user_id: string;
-        date: string;
-        glasses: number;
-        created_at: string;
-        updated_at: string;
-      }[], { user_id_param: string; date_param: string }>('get_water_log', { 
+      .rpc('get_water_log', { 
         user_id_param: userId, 
         date_param: date 
       });
     
     if (fetchError) throw fetchError;
     
-    const existingLogs = Array.isArray(data) ? data : [];
+    const existingLogs = Array.isArray(data) ? data as WaterLogData[] : [];
     
     if (existingLogs && existingLogs.length > 0) {
       // Update existing log
       const logId = existingLogs[0].id;
       const { error: updateError } = await supabase
-        .rpc<null, { 
-          log_id_param: string; 
-          glasses_param: number; 
-          updated_at_param: string 
-        }>('update_water_log', { 
+        .rpc('update_water_log', { 
           log_id_param: logId, 
           glasses_param: glasses, 
           updated_at_param: new Date().toISOString()
@@ -39,11 +37,7 @@ export const updateWaterIntake = async (userId: string, date: string, glasses: n
     } else {
       // Create new log
       const { error: createError } = await supabase
-        .rpc<null, {
-          user_id_param: string;
-          date_param: string;
-          glasses_param: number;
-        }>('create_water_log', {
+        .rpc('create_water_log', {
           user_id_param: userId,
           date_param: date,
           glasses_param: glasses
@@ -60,21 +54,14 @@ export const updateWaterIntake = async (userId: string, date: string, glasses: n
 export const incrementWaterIntake = async (userId: string, date: string) => {
   try {
     const { data, error: fetchError } = await supabase
-      .rpc<{
-        id: string;
-        user_id: string;
-        date: string;
-        glasses: number;
-        created_at: string;
-        updated_at: string;
-      }[], { user_id_param: string; date_param: string }>('get_water_log', { 
+      .rpc('get_water_log', { 
         user_id_param: userId, 
         date_param: date 
       });
     
     if (fetchError) throw fetchError;
     
-    const existingLogs = Array.isArray(data) ? data : [];
+    const existingLogs = Array.isArray(data) ? data as WaterLogData[] : [];
     const currentGlasses = existingLogs && existingLogs.length > 0 ? existingLogs[0].glasses : 0;
     
     await updateWaterIntake(userId, date, currentGlasses + 1);
@@ -87,21 +74,14 @@ export const incrementWaterIntake = async (userId: string, date: string) => {
 export const decrementWaterIntake = async (userId: string, date: string) => {
   try {
     const { data, error: fetchError } = await supabase
-      .rpc<{
-        id: string;
-        user_id: string;
-        date: string;
-        glasses: number;
-        created_at: string;
-        updated_at: string;
-      }[], { user_id_param: string; date_param: string }>('get_water_log', { 
+      .rpc('get_water_log', { 
         user_id_param: userId, 
         date_param: date 
       });
     
     if (fetchError) throw fetchError;
     
-    const existingLogs = Array.isArray(data) ? data : [];
+    const existingLogs = Array.isArray(data) ? data as WaterLogData[] : [];
     const currentGlasses = existingLogs && existingLogs.length > 0 ? existingLogs[0].glasses : 0;
     
     if (currentGlasses > 0) {

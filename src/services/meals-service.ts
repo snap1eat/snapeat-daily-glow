@@ -48,7 +48,7 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
       .insert({
         user_id: userId,
         meal_type: correctMealType,
-        cantidad: totalQuantity,
+        total_quantity: totalQuantity, // Cambiado de 'cantidad' a 'total_quantity'
         total_calories: totalCalories,
         total_protein: totalProtein,
         total_carbs: totalCarbs,

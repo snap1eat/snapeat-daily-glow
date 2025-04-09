@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DailyLog, Food, MealLog, NutritionGoals, UserProfile, UserSettings } from '@/types/user';
 import { Json } from '@/integrations/supabase/types';
@@ -102,7 +101,6 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
   const totalSugar = meal.foods.reduce((sum, food) => sum + (food.sugar || 0), 0);
   const totalQuantity = meal.foods.reduce((sum, food) => sum + food.quantity, 0);
   
-  // Convert meal.type to Spanish format
   const mealTypeMapping: Record<string, string> = {
     'breakfast': 'desayuno',
     'lunch': 'almuerzo',
@@ -112,7 +110,6 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
   
   const spanishMealType = mealTypeMapping[meal.type] || meal.type;
   
-  // Convert Food[] to JSONB format
   const foodsJson = meal.foods.map(food => ({
     name: food.name,
     quantity: food.quantity,
@@ -125,7 +122,6 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
     sugar: food.sugar || 0
   }));
   
-  // Using type assertion to match the table structure from our SQL migration
   const { data: mealData, error: mealError } = await supabase
     .from('meals')
     .insert({
@@ -153,27 +149,35 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
   return mealData;
 };
 
-// Water intake management functions using the RPC functions
 export const updateWaterIntake = async (userId: string, date: string, glasses: number) => {
   try {
-    // Check if there's a record for this date
-    const { data: existingLog, error: fetchError } = await supabase
-      .rpc('get_water_log', { user_id_param: userId, date_param: date });
+    const { data, error: fetchError } = await supabase
+      .rpc('get_water_log', { 
+        user_id_param: userId, 
+        date_param: date 
+      });
     
     if (fetchError) throw fetchError;
     
-    if (existingLog && existingLog.length > 0) {
-      // Update existing record
+    const existingLogs = data as Array<{
+      id: string;
+      user_id: string;
+      date: string;
+      glasses: number;
+      created_at: string;
+      updated_at: string;
+    }>;
+    
+    if (existingLogs && existingLogs.length > 0) {
       const { error: updateError } = await supabase
         .rpc('update_water_log', { 
-          log_id_param: existingLog[0].id, 
+          log_id_param: existingLogs[0].id, 
           glasses_param: glasses, 
           updated_at_param: new Date().toISOString()
         });
       
       if (updateError) throw updateError;
     } else {
-      // Insert new record
       const { error: createError } = await supabase
         .rpc('create_water_log', {
           user_id_param: userId,
@@ -191,13 +195,24 @@ export const updateWaterIntake = async (userId: string, date: string, glasses: n
 
 export const incrementWaterIntake = async (userId: string, date: string) => {
   try {
-    // Get current glasses count
-    const { data: existingLog, error: fetchError } = await supabase
-      .rpc('get_water_log', { user_id_param: userId, date_param: date });
+    const { data, error: fetchError } = await supabase
+      .rpc('get_water_log', { 
+        user_id_param: userId, 
+        date_param: date 
+      });
     
     if (fetchError) throw fetchError;
     
-    const currentGlasses = existingLog && existingLog.length > 0 ? existingLog[0].glasses : 0;
+    const existingLogs = data as Array<{
+      id: string;
+      user_id: string;
+      date: string;
+      glasses: number;
+      created_at: string;
+      updated_at: string;
+    }>;
+    
+    const currentGlasses = existingLogs && existingLogs.length > 0 ? existingLogs[0].glasses : 0;
     await updateWaterIntake(userId, date, currentGlasses + 1);
   } catch (error) {
     console.error("Error incrementing water:", error);
@@ -207,13 +222,24 @@ export const incrementWaterIntake = async (userId: string, date: string) => {
 
 export const decrementWaterIntake = async (userId: string, date: string) => {
   try {
-    // Get current glasses count
-    const { data: existingLog, error: fetchError } = await supabase
-      .rpc('get_water_log', { user_id_param: userId, date_param: date });
+    const { data, error: fetchError } = await supabase
+      .rpc('get_water_log', { 
+        user_id_param: userId, 
+        date_param: date 
+      });
     
     if (fetchError) throw fetchError;
     
-    const currentGlasses = existingLog && existingLog.length > 0 ? existingLog[0].glasses : 0;
+    const existingLogs = data as Array<{
+      id: string;
+      user_id: string;
+      date: string;
+      glasses: number;
+      created_at: string;
+      updated_at: string;
+    }>;
+    
+    const currentGlasses = existingLogs && existingLogs.length > 0 ? existingLogs[0].glasses : 0;
     if (currentGlasses > 0) {
       await updateWaterIntake(userId, date, currentGlasses - 1);
     }
@@ -229,7 +255,6 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
     startDate.setDate(startDate.getDate() - days);
     const startDateStr = startDate.toISOString().split('T')[0];
     
-    // Get meals data
     const { data: mealsData, error: mealsError } = await supabase
       .from('meals')
       .select('*')
@@ -239,8 +264,7 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
   
     if (mealsError) throw mealsError;
     
-    // Get water logs data using RPC
-    const { data: waterData, error: waterError } = await supabase
+    const { data, error: waterError } = await supabase
       .rpc('get_water_logs_for_user', { 
         user_id_param: userId, 
         start_date_param: startDateStr 
@@ -248,10 +272,17 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
   
     if (waterError) throw waterError;
     
-    // Process and combine the data
+    const waterData = data as Array<{
+      id: string;
+      user_id: string;
+      date: string;
+      glasses: number;
+      created_at: string;
+      updated_at: string;
+    }>;
+    
     const logsByDate: Record<string, any> = {};
     
-    // Initialize with dates from the past 30 days
     for (let i = 0; i < days; i++) {
       const date = new Date();
       date.setDate(date.getDate() - i);
@@ -266,7 +297,6 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
       };
     }
     
-    // Add water data
     if (waterData && Array.isArray(waterData)) {
       waterData.forEach((water: any) => {
         if (water && typeof water === 'object' && 'date' in water) {
@@ -278,13 +308,11 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
       });
     }
     
-    // Add meals data
     if (mealsData) {
       mealsData.forEach((meal: any) => {
         if (meal && typeof meal === 'object' && 'date' in meal && 'foods' in meal) {
           const dateStr = meal.date as string;
           if (logsByDate[dateStr]) {
-            // Convert the JSONB foods back to Food[] format
             const mealFoods = meal.foods as any[];
             const foods = mealFoods ? mealFoods.map((item: any) => ({
               id: crypto.randomUUID(),
@@ -293,13 +321,12 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
               calories: item.calories,
               protein: item.protein,
               carbs: item.carbs,
-              fat: item.fat || item.fats, // Handle both potential property names
+              fat: item.fat || item.fats,
               fiber: item.fiber,
               sodium: item.sodium,
               sugar: item.sugar
             })) : [];
             
-            // Convert Spanish meal type back to English
             const mealTypeMapping: Record<string, string> = {
               'desayuno': 'breakfast',
               'almuerzo': 'lunch',
@@ -323,7 +350,6 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
       });
     }
     
-    // Calculate streak
     const dateKeys = Object.keys(logsByDate).sort().reverse();
     let consecutiveDays = 0;
     
@@ -360,9 +386,7 @@ export const fetchUserMeals = async (userId: string, days = 30) => {
   
     if (mealsError) throw mealsError;
     
-    // Convert the meals data to the expected format
     return mealsData.map((meal: any) => {
-      // Convert the JSONB foods back to Food[] format
       const mealFoods = meal.foods as any[];
       const foods = mealFoods ? mealFoods.map((item: any) => ({
         id: crypto.randomUUID(),
@@ -371,13 +395,12 @@ export const fetchUserMeals = async (userId: string, days = 30) => {
         calories: item.calories,
         protein: item.protein,
         carbs: item.carbs,
-        fat: item.fat || item.fats, // Handle both property names
+        fat: item.fat || item.fats,
         fiber: item.fiber,
         sodium: item.sodium,
         sugar: item.sugar
       })) : [];
       
-      // Convert Spanish meal type back to English
       const mealTypeMapping: Record<string, string> = {
         'desayuno': 'breakfast',
         'almuerzo': 'lunch',
@@ -405,7 +428,6 @@ export const fetchUserMeals = async (userId: string, days = 30) => {
   }
 };
 
-// User goals functions - using RPCs to avoid type issues
 export const saveUserGoal = async (userId: string, goalType: string, description: string, targetValue?: number, targetDate?: Date) => {
   try {
     const { data, error } = await supabase
@@ -418,28 +440,52 @@ export const saveUserGoal = async (userId: string, goalType: string, description
       });
     
     if (error) throw error;
-    return data;
+    
+    return data as Array<{
+      id: string;
+      user_id: string;
+      goal_type: string;
+      description: string;
+      target_value: number | null;
+      current_value: number | null;
+      target_date: string | null;
+      is_achieved: boolean;
+      created_at: string;
+      updated_at: string;
+    }>;
   } catch (error) {
     console.error("Error saving user goal:", error);
     throw error;
   }
 };
 
-// Get user goals
 export const getUserGoals = async (userId: string) => {
   try {
     const { data, error } = await supabase
-      .rpc('get_user_goals', { user_id_param: userId });
+      .rpc('get_user_goals', { 
+        user_id_param: userId 
+      });
     
     if (error) throw error;
-    return data || [];
+    
+    return (data || []) as Array<{
+      id: string;
+      user_id: string;
+      goal_type: string;
+      description: string;
+      target_value: number | null;
+      current_value: number | null;
+      target_date: string | null;
+      is_achieved: boolean;
+      created_at: string;
+      updated_at: string;
+    }>;
   } catch (error) {
     console.error("Error getting user goals:", error);
     throw error;
   }
 };
 
-// Update a user goal
 export const updateUserGoal = async (goalId: string, updates: Partial<{
   description: string;
   target_value: number;
@@ -460,18 +506,31 @@ export const updateUserGoal = async (goalId: string, updates: Partial<{
       });
     
     if (error) throw error;
-    return data;
+    
+    return data as Array<{
+      id: string;
+      user_id: string;
+      goal_type: string;
+      description: string;
+      target_value: number | null;
+      current_value: number | null;
+      target_date: string | null;
+      is_achieved: boolean;
+      created_at: string;
+      updated_at: string;
+    }>;
   } catch (error) {
     console.error("Error updating user goal:", error);
     throw error;
   }
 };
 
-// Delete a user goal
 export const deleteUserGoal = async (goalId: string) => {
   try {
     const { error } = await supabase
-      .rpc('delete_user_goal', { goal_id_param: goalId });
+      .rpc('delete_user_goal', { 
+        goal_id_param: goalId 
+      });
     
     if (error) throw error;
   } catch (error) {

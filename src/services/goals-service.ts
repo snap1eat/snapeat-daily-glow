@@ -15,7 +15,13 @@ export const saveUserGoal = async (userId: string, goalType: string, description
         is_achieved: boolean;
         created_at: string;
         updated_at: string;
-      }[]>('create_user_goal', {
+      }[], {
+        user_id_param: string;
+        goal_type_param: string;
+        description_param: string;
+        target_value_param: number | null;
+        target_date_param: string | null;
+      }>('create_user_goal', {
         user_id_param: userId,
         goal_type_param: goalType,
         description_param: description,
@@ -46,7 +52,7 @@ export const getUserGoals = async (userId: string) => {
         is_achieved: boolean;
         created_at: string;
         updated_at: string;
-      }[]>('get_user_goals', { 
+      }[], { user_id_param: string }>('get_user_goals', { 
         user_id_param: userId 
       });
     
@@ -79,7 +85,15 @@ export const updateUserGoal = async (goalId: string, updates: Partial<{
         is_achieved: boolean;
         created_at: string;
         updated_at: string;
-      }[]>('update_user_goal', {
+      }[], {
+        goal_id_param: string;
+        description_param?: string;
+        target_value_param?: number;
+        current_value_param?: number;
+        target_date_param?: string;
+        is_achieved_param?: boolean;
+        updated_at_param: string;
+      }>('update_user_goal', {
         goal_id_param: goalId,
         description_param: updates.description,
         target_value_param: updates.target_value,
@@ -101,7 +115,7 @@ export const updateUserGoal = async (goalId: string, updates: Partial<{
 export const deleteUserGoal = async (goalId: string) => {
   try {
     const { error } = await supabase
-      .rpc<null>('delete_user_goal', { 
+      .rpc<null, { goal_id_param: string }>('delete_user_goal', { 
         goal_id_param: goalId 
       });
     

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { DailyLog } from '@/types/user';
 
@@ -25,7 +26,10 @@ export const fetchUserLogs = async (userId: string, days = 30) => {
         glasses: number;
         created_at: string;
         updated_at: string;
-      }[]>('get_water_logs_for_user', { 
+      }[], { 
+        user_id_param: string; 
+        start_date_param: string; 
+      }>('get_water_logs_for_user', { 
         user_id_param: userId, 
         start_date_param: startDateStr 
       });

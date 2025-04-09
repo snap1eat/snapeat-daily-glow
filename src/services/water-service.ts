@@ -12,7 +12,7 @@ export const updateWaterIntake = async (userId: string, date: string, glasses: n
         glasses: number;
         created_at: string;
         updated_at: string;
-      }[]>('get_water_log', { 
+      }[], { user_id_param: string; date_param: string }>('get_water_log', { 
         user_id_param: userId, 
         date_param: date 
       });
@@ -25,7 +25,11 @@ export const updateWaterIntake = async (userId: string, date: string, glasses: n
       // Update existing log
       const logId = existingLogs[0].id;
       const { error: updateError } = await supabase
-        .rpc<null>('update_water_log', { 
+        .rpc<null, { 
+          log_id_param: string; 
+          glasses_param: number; 
+          updated_at_param: string 
+        }>('update_water_log', { 
           log_id_param: logId, 
           glasses_param: glasses, 
           updated_at_param: new Date().toISOString()
@@ -35,7 +39,11 @@ export const updateWaterIntake = async (userId: string, date: string, glasses: n
     } else {
       // Create new log
       const { error: createError } = await supabase
-        .rpc<null>('create_water_log', {
+        .rpc<null, {
+          user_id_param: string;
+          date_param: string;
+          glasses_param: number;
+        }>('create_water_log', {
           user_id_param: userId,
           date_param: date,
           glasses_param: glasses
@@ -59,7 +67,7 @@ export const incrementWaterIntake = async (userId: string, date: string) => {
         glasses: number;
         created_at: string;
         updated_at: string;
-      }[]>('get_water_log', { 
+      }[], { user_id_param: string; date_param: string }>('get_water_log', { 
         user_id_param: userId, 
         date_param: date 
       });
@@ -86,7 +94,7 @@ export const decrementWaterIntake = async (userId: string, date: string) => {
         glasses: number;
         created_at: string;
         updated_at: string;
-      }[]>('get_water_log', { 
+      }[], { user_id_param: string; date_param: string }>('get_water_log', { 
         user_id_param: userId, 
         date_param: date 
       });

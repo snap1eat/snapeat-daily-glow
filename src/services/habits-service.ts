@@ -19,7 +19,7 @@ export interface UserHabit {
 export const fetchUserHabits = async (userId: string): Promise<UserHabit | null> => {
   try {
     const { data, error } = await supabase
-      .from('user_habits')
+      .from('detailed_user_habits')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
@@ -56,7 +56,7 @@ export const saveUserHabits = async (userId: string, habits: Omit<UserHabit, 'id
   try {
     // Check if the user already has habits saved
     const { data: existingHabits } = await supabase
-      .from('user_habits')
+      .from('detailed_user_habits')
       .select('id')
       .eq('user_id', userId)
       .maybeSingle();
@@ -79,13 +79,13 @@ export const saveUserHabits = async (userId: string, habits: Omit<UserHabit, 'id
     if (existingHabits) {
       // Update existing record
       result = await supabase
-        .from('user_habits')
+        .from('detailed_user_habits')
         .update(habitData)
         .eq('id', existingHabits.id);
     } else {
       // Insert new record
       result = await supabase
-        .from('user_habits')
+        .from('detailed_user_habits')
         .insert(habitData);
     }
     

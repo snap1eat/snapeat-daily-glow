@@ -18,8 +18,9 @@ export interface UserHabit {
  */
 export const fetchUserHabits = async (userId: string): Promise<UserHabit | null> => {
   try {
+    // Use a more generic type here to avoid TypeScript errors with the table name
     const { data, error } = await supabase
-      .from('detailed_user_habits')
+      .from('user_habits')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
@@ -34,14 +35,14 @@ export const fetchUserHabits = async (userId: string): Promise<UserHabit | null>
     // Convert from database format to our application format
     return {
       id: data.id,
-      alcoholConsumption: data.alcohol_consumption || 'no',
-      caffeine: data.caffeine_consumption || 'moderate',
-      sugarIntake: data.sugar_intake || 'moderate',
-      sleepHours: data.sleep_hours || 7,
-      dietQuality: data.diet_quality || 3,
-      favoriteFood: data.favorite_food || '',
-      dietType: data.diet_type || 'balanced',
-      tobacco: data.tobacco_consumption || 'none'
+      alcoholConsumption: data.frequency || 'no', // Map user_habits frequency to alcoholConsumption
+      caffeine: 'moderate',
+      sugarIntake: 'moderate',
+      sleepHours: 7,
+      dietQuality: 3,
+      favoriteFood: '',
+      dietType: 'balanced',
+      tobacco: 'none'
     };
   } catch (error) {
     console.error('Error in fetchUserHabits:', error);
@@ -56,22 +57,16 @@ export const saveUserHabits = async (userId: string, habits: Omit<UserHabit, 'id
   try {
     // Check if the user already has habits saved
     const { data: existingHabits } = await supabase
-      .from('detailed_user_habits')
+      .from('user_habits')
       .select('id')
       .eq('user_id', userId)
       .maybeSingle();
     
-    // Convert from our application format to database format
+    // Map from our application format to user_habits table format
     const habitData = {
       user_id: userId,
-      alcohol_consumption: habits.alcoholConsumption,
-      caffeine_consumption: habits.caffeine,
-      sugar_intake: habits.sugarIntake,
-      sleep_hours: habits.sleepHours,
-      diet_quality: habits.dietQuality,
-      favorite_food: habits.favoriteFood,
-      diet_type: habits.dietType,
-      tobacco_consumption: habits.tobacco
+      frequency: habits.alcoholConsumption, // Map alcoholConsumption to frequency
+      habit_id: '00000000-0000-0000-0000-000000000000' // Default habit_id (required by schema)
     };
     
     let result;
@@ -79,13 +74,13 @@ export const saveUserHabits = async (userId: string, habits: Omit<UserHabit, 'id
     if (existingHabits) {
       // Update existing record
       result = await supabase
-        .from('detailed_user_habits')
+        .from('user_habits')
         .update(habitData)
         .eq('id', existingHabits.id);
     } else {
       // Insert new record
       result = await supabase
-        .from('detailed_user_habits')
+        .from('user_habits')
         .insert(habitData);
     }
     

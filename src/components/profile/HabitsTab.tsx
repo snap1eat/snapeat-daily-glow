@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,9 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/contexts/UserContext';
+import { fetchUserHabits, saveUserHabits } from '@/services/habits-service';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const HabitsTab = () => {
   const { toast } = useToast();
+  const { user } = useUser();
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     alcoholConsumption: 'no',
     caffeine: 'moderate',
@@ -21,6 +26,34 @@ const HabitsTab = () => {
     tobacco: 'none'
   });
   
+  // Fetch user habits when component mounts
+  useEffect(() => {
+    const loadUserHabits = async () => {
+      if (!user.isAuthenticated) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const habits = await fetchUserHabits(user.profile.id);
+        if (habits) {
+          setFormData(habits);
+        }
+      } catch (error) {
+        console.error('Error loading user habits:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los hábitos del usuario.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadUserHabits();
+  }, [user.isAuthenticated, user.profile.id, toast]);
+  
   const handleInputChange = (key: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -28,12 +61,63 @@ const HabitsTab = () => {
     }));
   };
 
-  const handleSavePreferences = () => {
-    toast({
-      title: "Preferencias guardadas",
-      description: "Se han guardado tus preferencias de hábitos."
-    });
+  const handleSavePreferences = async () => {
+    if (!user.isAuthenticated) {
+      toast({
+        title: "Autenticación requerida",
+        description: "Debe iniciar sesión para guardar sus preferencias."
+      });
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const success = await saveUserHabits(user.profile.id, formData);
+      
+      if (success) {
+        toast({
+          title: "Preferencias guardadas",
+          description: "Se han guardado tus preferencias de hábitos."
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudieron guardar las preferencias.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error saving habits:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron guardar las preferencias.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <Card className="mb-6">
+        <CardHeader>
+          <Skeleton className="h-8 w-3/4" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-5 w-1/3" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="mb-6">
@@ -179,8 +263,12 @@ const HabitsTab = () => {
             </Select>
           </div>
           
-          <Button className="w-full" onClick={handleSavePreferences}>
-            Guardar preferencias
+          <Button 
+            className="w-full" 
+            onClick={handleSavePreferences}
+            disabled={loading}
+          >
+            {loading ? 'Guardando...' : 'Guardar preferencias'}
           </Button>
         </div>
       </CardContent>

@@ -6,3 +6,5 @@ export * from './meals-service';
 export * from './water-service';
 export * from './logs-service';
 export * from './goals-service';
+export * from './habits-service';
+

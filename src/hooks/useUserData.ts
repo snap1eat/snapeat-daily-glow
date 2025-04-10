@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { StorageService } from '@/services/storage-service';
 import { supabase } from '@/integrations/supabase/client';
@@ -78,6 +77,7 @@ export const useUserData = () => {
       
       if (profileData) {
         const updatedProfile: UserProfile = {
+          id: userId,
           name: profileData.display_name || defaultProfile.name,
           age: profileData.age || defaultProfile.age,
           gender: profileData.gender || defaultProfile.gender,

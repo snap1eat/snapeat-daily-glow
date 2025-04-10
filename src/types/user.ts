@@ -1,5 +1,3 @@
-
-
 export interface UserProfile {
   name: string;
   age: number;
@@ -9,7 +7,8 @@ export interface UserProfile {
   activityLevel: string;
   avatar: string;
   username: string;
-  healthGoals: string[]; // Add healthGoals array
+  healthGoals: string[]; 
+  id: string; // Add id to UserProfile
 }
 
 export interface NutritionGoals {

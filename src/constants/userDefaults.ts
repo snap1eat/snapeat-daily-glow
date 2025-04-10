@@ -2,6 +2,7 @@
 import { NutritionGoals, UserProfile, UserSettings } from '../types/user';
 
 export const defaultProfile: UserProfile = {
+  id: '', // Add the required id field
   name: '',
   age: 30,
   gender: 'no-answer',

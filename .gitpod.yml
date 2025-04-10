@@ -1,11 +1,10 @@
-image: flutter  # O la imagen que uses (ej: node)
-tasks:
-  - name: Run Flutter App
-    init: |
-      flutter pub get
-      echo "SUPABASE_URL=$SUPABASE_URL" > .env
-      echo "SUPABASE_KEY=$SUPABASE_KEY" >> .env
-    command: flutter run -d chrome
+image: gitpod/workspace-full  # Imagen universal con herramientas preinstaladas
 ports:
   - port: 3000
     onOpen: open-preview
+tasks:
+  - name: Inicializar Entorno
+    init: |
+      echo "Instalando dependencias generales..."
+      sudo apt-get update
+      # Aquí añades herramientas necesarias (ej: n8n, CLI de Supabase)

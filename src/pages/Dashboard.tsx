@@ -1,6 +1,5 @@
-
 import { useUser } from '@/contexts/UserContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ProgressCircle } from '@/components/ProgressCircle';
 import { MealIndicator } from '@/components/MealIndicator';
@@ -8,6 +7,13 @@ import { PineappleMascot } from '@/components/PineappleMascot';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Droplet, AlertTriangle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+interface DisplayedExcess {
+  calories: boolean;
+  protein: boolean;
+  carbs: boolean;
+  fat: boolean;
+}
 
 const Dashboard = () => {
   const { 
@@ -28,44 +34,43 @@ const Dashboard = () => {
   const totalCarbs = getDailyCarbs();
   const totalFat = getDailyFat();
   
+  const [displayedExcess, setDisplayedExcess] = useState<DisplayedExcess>({
+    calories: false,
+    protein: false,
+    carbs: false,
+    fat: false,
+  });
+  
   const caloriePercentage = Math.round((totalCalories / user.nutritionGoals.calories) * 100);
   const proteinPercentage = Math.round((totalProtein / user.nutritionGoals.protein) * 100);
   const carbsPercentage = Math.round((totalCarbs / user.nutritionGoals.carbs) * 100);
   const fatPercentage = Math.round((totalFat / user.nutritionGoals.fat) * 100);
   
-  // Determine if any nutrient exceeds the recommended limit (>110%)
   const hasExcess = caloriePercentage > 110 || proteinPercentage > 110 || carbsPercentage > 110 || fatPercentage > 110;
   
-  // Calculate excess percentages
   const calorieExcess = caloriePercentage > 100 ? `+${caloriePercentage - 100}%` : '';
   const proteinExcess = proteinPercentage > 100 ? `+${proteinPercentage - 100}%` : '';
   const carbsExcess = carbsPercentage > 100 ? `+${carbsPercentage - 100}%` : '';
   const fatExcess = fatPercentage > 100 ? `+${fatPercentage - 100}%` : '';
   
-  // Check if meals have been logged
   const breakfastMeals = getTodayMealsByType('breakfast');
   const lunchMeals = getTodayMealsByType('lunch');
   const dinnerMeals = getTodayMealsByType('dinner');
   const snackMeals = getTodayMealsByType('snack');
   
-  // Calculate mascot mood (0-10) based on activity
   const calculateMascotMood = () => {
     let mood = 5; // neutral starting point
     
-    // Add points for logged meals
     if (breakfastMeals.length > 0) mood += 1;
     if (lunchMeals.length > 0) mood += 1;
     if (dinnerMeals.length > 0) mood += 1;
     if (snackMeals.length > 0) mood += 0.5;
     
-    // Add points for water
     mood += todayLog.waterGlasses * 0.25;
     
-    // Add/subtract points based on nutrition balance
     if (caloriePercentage > 110) mood -= 1;
     if (caloriePercentage < 50) mood -= 1;
     
-    // Clamp between 0-10
     return Math.max(0, Math.min(mood, 10));
   };
   
@@ -95,7 +100,6 @@ const Dashboard = () => {
     }
   };
   
-  // Get personalized recommendation
   const getDailyRecommendation = () => {
     if (breakfastMeals.length === 0) {
       return "Te saltaste el desayuno. ¡Es la comida más importante del día!";
@@ -116,33 +120,55 @@ const Dashboard = () => {
     return "¡Vas por buen camino! Sigue manteniendo este equilibrio nutricional.";
   };
   
-  // Show excess alert message if there's an excess
   useEffect(() => {
-    if (hasExcess) {
-      // Create detailed excess message
-      let excessDetails = '';
-      if (caloriePercentage > 110) excessDetails += `Calorías: ${calorieExcess}, `;
-      if (proteinPercentage > 110) excessDetails += `Proteína: ${proteinExcess}, `;
-      if (carbsPercentage > 110) excessDetails += `Carbohidratos: ${carbsExcess}, `;
-      if (fatPercentage > 110) excessDetails += `Grasas: ${fatExcess}, `;
-      
-      // Remove trailing comma and space
-      excessDetails = excessDetails.replace(/, $/, '');
-      
+    if (!hasExcess) return;
+    
+    let excessDetails = '';
+    let shouldShowToast = false;
+    const newDisplayedExcess = {...displayedExcess};
+    
+    if (caloriePercentage > 110 && !displayedExcess.calories) {
+      excessDetails += `Calorías: ${calorieExcess}, `;
+      newDisplayedExcess.calories = true;
+      shouldShowToast = true;
+    }
+    
+    if (proteinPercentage > 110 && !displayedExcess.protein) {
+      excessDetails += `Proteína: ${proteinExcess}, `;
+      newDisplayedExcess.protein = true;
+      shouldShowToast = true;
+    }
+    
+    if (carbsPercentage > 110 && !displayedExcess.carbs) {
+      excessDetails += `Carbohidratos: ${carbsExcess}, `;
+      newDisplayedExcess.carbs = true;
+      shouldShowToast = true;
+    }
+    
+    if (fatPercentage > 110 && !displayedExcess.fat) {
+      excessDetails += `Grasas: ${fatExcess}, `;
+      newDisplayedExcess.fat = true;
+      shouldShowToast = true;
+    }
+    
+    excessDetails = excessDetails.replace(/, $/, '');
+    
+    if (shouldShowToast && excessDetails) {
       toast({
         variant: "destructive",
         title: "¡Atención!",
         description: `Has excedido algunas de tus metas nutricionales diarias. ${excessDetails}`,
         action: <AlertTriangle className="h-5 w-5" />
       });
+      
+      setDisplayedExcess(newDisplayedExcess);
     }
-  }, [hasExcess]);
+  }, [caloriePercentage, proteinPercentage, carbsPercentage, fatPercentage]);
 
   return (
     <div className="pt-16 pb-4">
-      <h1 className="text-2xl font-bold mb-6">Resumen Diariooo</h1>
+      <h1 className="text-2xl font-bold mb-6">Resumen Diario</h1>
       
-      {/* Nutrition Progress */}
       <Card className="mb-6">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Nutrición</CardTitle>
@@ -204,7 +230,6 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       
-      {/* Meal Tracking */}
       <Card className="mb-6">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Comidas</CardTitle>
@@ -239,7 +264,6 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       
-      {/* Mascot and Recommendation */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <Card className="bg-muted bg-opacity-50">
           <CardContent className="pt-6 flex flex-col items-center">
@@ -262,7 +286,6 @@ const Dashboard = () => {
         </Card>
       </div>
       
-      {/* Water Tracking */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Hidratación</CardTitle>

@@ -64,7 +64,7 @@ const useGoalsForm = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBase
       
       console.log("Saving nutrition goals:", formData, "with nutrition goal:", formData.nutritionGoal);
       
-      // Guardar en la base de datos
+      // Guardar en la base de datos con el nutrition_goal
       await saveNutritionGoalsToDb(
         userId, 
         {

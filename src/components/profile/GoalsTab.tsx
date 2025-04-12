@@ -65,7 +65,8 @@ const GoalsTab = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBasedOnO
       setLoading(true);
       const userId = await UserService.getCurrentUserId();
       
-      // Fix: use correct parameter order - first userId, then goals, then nutritionGoal
+      // Fix: We need to call the service function with the correct parameters
+      // The function expects (userId, goals, nutritionGoal)
       await updateNutritionGoals(
         userId, 
         {
@@ -77,7 +78,8 @@ const GoalsTab = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBasedOnO
         formData.nutritionGoal
       );
       
-      // Update context state
+      // Update context state - this is a different function from the service
+      // It only expects one parameter - the goals object
       updateNutritionGoals({
         calories: Number(formData.calories),
         protein: Number(formData.protein),

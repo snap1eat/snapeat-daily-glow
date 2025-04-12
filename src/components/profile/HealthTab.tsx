@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,6 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { fetchUserHealth, saveUserHealth } from '@/services/health-service';
+import * as UserService from '@/services/user-service';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface HealthTabProps {
   weight: number;
@@ -15,6 +18,7 @@ interface HealthTabProps {
 
 const HealthTab = ({ weight, height }: HealthTabProps) => {
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     glycemia: '',
     cholesterol: '',
@@ -26,6 +30,36 @@ const HealthTab = ({ weight, height }: HealthTabProps) => {
     familyHypertension: false,
     familyDiabetes: false,
   });
+  
+  useEffect(() => {
+    const loadUserHealth = async () => {
+      try {
+        setLoading(true);
+        const userId = await UserService.getCurrentUserId();
+        const health = await fetchUserHealth(userId);
+        
+        if (health) {
+          setFormData({
+            glycemia: health.glycemia,
+            cholesterol: health.cholesterol,
+            triglycerides: health.triglycerides,
+            hypertension: health.hypertension,
+            foodIntolerances: health.foodIntolerances,
+            digestiveIssues: health.digestiveIssues,
+            additionalHealthInfo: health.additionalHealthInfo,
+            familyHypertension: health.familyHypertension,
+            familyDiabetes: health.familyDiabetes,
+          });
+        }
+      } catch (error) {
+        console.error("Error loading health data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadUserHealth();
+  }, []);
   
   const handleInputChange = (key: string, value: any) => {
     setFormData(prev => ({
@@ -39,12 +73,57 @@ const HealthTab = ({ weight, height }: HealthTabProps) => {
     return (weight / (heightInMeters * heightInMeters)).toFixed(1);
   };
 
-  const handleSaveHealthHistory = () => {
-    toast({
-      title: "Historial médico guardado",
-      description: "Se ha actualizado tu información de salud."
-    });
+  const handleSaveHealthHistory = async () => {
+    try {
+      setLoading(true);
+      const userId = await UserService.getCurrentUserId();
+      const success = await saveUserHealth(userId, formData);
+      
+      if (success) {
+        toast({
+          title: "Historial médico guardado",
+          description: "Se ha actualizado tu información de salud."
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo guardar el historial médico.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error saving health data:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el historial médico.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <Card className="mb-6">
+        <CardHeader>
+          <Skeleton className="h-8 w-3/4" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <Skeleton className="h-20 w-full" />
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-5 w-1/3" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="mb-6">
@@ -181,8 +260,12 @@ const HealthTab = ({ weight, height }: HealthTabProps) => {
           </div>
         </div>
         
-        <Button className="w-full mt-6" onClick={handleSaveHealthHistory}>
-          Guardar historial médico
+        <Button 
+          className="w-full mt-6" 
+          onClick={handleSaveHealthHistory}
+          disabled={loading}
+        >
+          {loading ? 'Guardando...' : 'Guardar historial médico'}
         </Button>
       </CardContent>
     </Card>

@@ -18,7 +18,6 @@ export interface UserHabit {
  */
 export const fetchUserHabits = async (userId: string): Promise<UserHabit | null> => {
   try {
-    // Use a more generic type here to avoid TypeScript errors with the table name
     const { data, error } = await supabase
       .from('user_habits')
       .select('*')
@@ -35,14 +34,14 @@ export const fetchUserHabits = async (userId: string): Promise<UserHabit | null>
     // Convert from database format to our application format
     return {
       id: data.id,
-      alcoholConsumption: data.frequency || 'no', // Map user_habits frequency to alcoholConsumption
-      caffeine: 'moderate',
-      sugarIntake: 'moderate',
-      sleepHours: 7,
-      dietQuality: 3,
-      favoriteFood: '',
-      dietType: 'balanced',
-      tobacco: 'none'
+      alcoholConsumption: data.alcohol_consumption || 'no',
+      caffeine: data.caffeine || 'moderate',
+      sugarIntake: data.sugar_intake || 'moderate',
+      sleepHours: data.sleep_hours || 7,
+      dietQuality: data.diet_quality || 3,
+      favoriteFood: data.favorite_food || '',
+      dietType: data.diet_type || 'balanced',
+      tobacco: data.tobacco || 'none'
     };
   } catch (error) {
     console.error('Error in fetchUserHabits:', error);
@@ -62,11 +61,18 @@ export const saveUserHabits = async (userId: string, habits: Omit<UserHabit, 'id
       .eq('user_id', userId)
       .maybeSingle();
     
-    // Map from our application format to user_habits table format
+    // Map from our application format to database format
     const habitData = {
       user_id: userId,
-      frequency: habits.alcoholConsumption, // Map alcoholConsumption to frequency
-      habit_id: '00000000-0000-0000-0000-000000000000' // Default habit_id (required by schema)
+      alcohol_consumption: habits.alcoholConsumption,
+      caffeine: habits.caffeine,
+      sugar_intake: habits.sugarIntake,
+      sleep_hours: habits.sleepHours,
+      diet_quality: habits.dietQuality,
+      favorite_food: habits.favoriteFood,
+      diet_type: habits.dietType,
+      tobacco: habits.tobacco,
+      updated_at: new Date().toISOString()
     };
     
     let result;

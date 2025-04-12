@@ -194,15 +194,10 @@ export type Database = {
           age: number | null
           avatar_url: string | null
           created_at: string | null
-          daily_calorie_goal: number | null
-          daily_carbs_goal: number | null
-          daily_fats_goal: number | null
-          daily_protein_goal: number | null
           display_name: string | null
           email: string
           gender: string | null
           has_crown: boolean | null
-          health_goal: string | null
           height: number | null
           id: string
           updated_at: string | null
@@ -213,15 +208,10 @@ export type Database = {
           age?: number | null
           avatar_url?: string | null
           created_at?: string | null
-          daily_calorie_goal?: number | null
-          daily_carbs_goal?: number | null
-          daily_fats_goal?: number | null
-          daily_protein_goal?: number | null
           display_name?: string | null
           email: string
           gender?: string | null
           has_crown?: boolean | null
-          health_goal?: string | null
           height?: number | null
           id: string
           updated_at?: string | null
@@ -232,15 +222,10 @@ export type Database = {
           age?: number | null
           avatar_url?: string | null
           created_at?: string | null
-          daily_calorie_goal?: number | null
-          daily_carbs_goal?: number | null
-          daily_fats_goal?: number | null
-          daily_protein_goal?: number | null
           display_name?: string | null
           email?: string
           gender?: string | null
           has_crown?: boolean | null
-          health_goal?: string | null
           height?: number | null
           id?: string
           updated_at?: string | null
@@ -250,128 +235,123 @@ export type Database = {
       }
       user_goals: {
         Row: {
-          created_at: string | null
-          current_value: number | null
-          description: string
-          goal_type: string
+          calories: number
+          carbs: number
+          fat: number
           id: string
-          is_achieved: boolean | null
-          target_date: string | null
-          target_value: number | null
+          nutrition_goal: string | null
+          protein: number
           updated_at: string | null
           user_id: string
         }
         Insert: {
-          created_at?: string | null
-          current_value?: number | null
-          description: string
-          goal_type: string
+          calories?: number
+          carbs?: number
+          fat?: number
           id?: string
-          is_achieved?: boolean | null
-          target_date?: string | null
-          target_value?: number | null
+          nutrition_goal?: string | null
+          protein?: number
           updated_at?: string | null
           user_id: string
         }
         Update: {
-          created_at?: string | null
-          current_value?: number | null
-          description?: string
-          goal_type?: string
+          calories?: number
+          carbs?: number
+          fat?: number
           id?: string
-          is_achieved?: boolean | null
-          target_date?: string | null
-          target_value?: number | null
+          nutrition_goal?: string | null
+          protein?: number
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_goals_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_habits: {
         Row: {
-          created_at: string | null
-          frequency: string | null
-          habit_id: string
+          alcohol_consumption: string | null
+          caffeine: string | null
+          diet_quality: number | null
+          diet_type: string | null
+          favorite_food: string | null
           id: string
+          sleep_hours: number | null
+          sugar_intake: string | null
+          tobacco: string | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          created_at?: string | null
-          frequency?: string | null
-          habit_id: string
+          alcohol_consumption?: string | null
+          caffeine?: string | null
+          diet_quality?: number | null
+          diet_type?: string | null
+          favorite_food?: string | null
           id?: string
+          sleep_hours?: number | null
+          sugar_intake?: string | null
+          tobacco?: string | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
-          created_at?: string | null
-          frequency?: string | null
-          habit_id?: string
+          alcohol_consumption?: string | null
+          caffeine?: string | null
+          diet_quality?: number | null
+          diet_type?: string | null
+          favorite_food?: string | null
           id?: string
+          sleep_hours?: number | null
+          sugar_intake?: string | null
+          tobacco?: string | null
+          updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_habits_habit_id_fkey"
-            columns: ["habit_id"]
-            isOneToOne: false
-            referencedRelation: "habits"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_habits_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      user_health_conditions: {
+      user_health: {
         Row: {
-          condition_id: string
-          created_at: string | null
+          additional_health_info: string | null
+          cholesterol: string | null
+          digestive_issues: string | null
+          family_diabetes: boolean | null
+          family_hypertension: boolean | null
+          food_intolerances: string | null
+          glycemia: string | null
+          hypertension: boolean | null
           id: string
-          notes: string | null
+          triglycerides: string | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          condition_id: string
-          created_at?: string | null
+          additional_health_info?: string | null
+          cholesterol?: string | null
+          digestive_issues?: string | null
+          family_diabetes?: boolean | null
+          family_hypertension?: boolean | null
+          food_intolerances?: string | null
+          glycemia?: string | null
+          hypertension?: boolean | null
           id?: string
-          notes?: string | null
+          triglycerides?: string | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
-          condition_id?: string
-          created_at?: string | null
+          additional_health_info?: string | null
+          cholesterol?: string | null
+          digestive_issues?: string | null
+          family_diabetes?: boolean | null
+          family_hypertension?: boolean | null
+          food_intolerances?: string | null
+          glycemia?: string | null
+          hypertension?: boolean | null
           id?: string
-          notes?: string | null
+          triglycerides?: string | null
+          updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_health_conditions_condition_id_fkey"
-            columns: ["condition_id"]
-            isOneToOne: false
-            referencedRelation: "health_conditions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_health_conditions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_settings: {
         Row: {

@@ -24,7 +24,6 @@ export const updateUserProfile = async (userId: string, profile: Partial<UserPro
       height: profile.height,
       activity_level: profile.activityLevel,
       avatar_url: profile.avatar,
-      health_goal: profile.healthGoals?.length ? profile.healthGoals[0] : null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId);
@@ -32,19 +31,68 @@ export const updateUserProfile = async (userId: string, profile: Partial<UserPro
   if (error) throw error;
 };
 
-export const updateNutritionGoals = async (userId: string, goals: Partial<NutritionGoals>) => {
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      daily_calorie_goal: goals.calories,
-      daily_protein_goal: goals.protein,
-      daily_carbs_goal: goals.carbs,
-      daily_fats_goal: goals.fat,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', userId);
+export const getUserNutritionGoals = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_goals')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
     
-  if (error) throw error;
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    return data ? {
+      calories: data.calories,
+      protein: data.protein,
+      carbs: data.carbs,
+      fat: data.fat,
+      nutritionGoal: data.nutrition_goal
+    } : null;
+  } catch (error) {
+    console.error('Error fetching nutrition goals:', error);
+    return null;
+  }
+};
+
+export const updateNutritionGoals = async (userId: string, goals: Partial<NutritionGoals>, nutritionGoal?: string) => {
+  try {
+    // Check if goals already exist for user
+    const { data: existingGoals } = await supabase
+      .from('user_goals')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    const goalsData = {
+      user_id: userId,
+      calories: goals.calories,
+      protein: goals.protein,
+      carbs: goals.carbs,
+      fat: goals.fat,
+      nutrition_goal: nutritionGoal || 'maintain',
+      updated_at: new Date().toISOString()
+    };
+    
+    if (existingGoals) {
+      // Update existing record
+      const { error } = await supabase
+        .from('user_goals')
+        .update(goalsData)
+        .eq('id', existingGoals.id);
+        
+      if (error) throw error;
+    } else {
+      // Insert new record
+      const { error } = await supabase
+        .from('user_goals')
+        .insert(goalsData);
+        
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.error('Error updating nutrition goals:', error);
+    throw error;
+  }
 };
 
 export const getUserSettings = async (userId: string) => {

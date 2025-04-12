@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { NutritionGoals } from '@/types/user';
 import * as UserService from '@/services/user-service';
-import { getUserNutritionGoals, updateNutritionGoals } from '@/services/profile-service';
+import { getUserNutritionGoals, updateNutritionGoals as saveNutritionGoalsToDb } from '@/services/profile-service';
 
 interface GoalsTabProps {
   nutritionGoals: NutritionGoals;
@@ -65,9 +64,7 @@ const GoalsTab = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBasedOnO
       setLoading(true);
       const userId = await UserService.getCurrentUserId();
       
-      // Fix: We need to call the service function with the correct parameters
-      // The function expects (userId, goals, nutritionGoal)
-      await updateNutritionGoals(
+      await saveNutritionGoalsToDb(
         userId, 
         {
           calories: Number(formData.calories),
@@ -78,9 +75,7 @@ const GoalsTab = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBasedOnO
         formData.nutritionGoal
       );
       
-      // Update context state - this is a different function from the service
-      // It only expects one parameter - the goals object
-      updateNutritionGoals({
+      await updateNutritionGoals({
         calories: Number(formData.calories),
         protein: Number(formData.protein),
         carbs: Number(formData.carbs),

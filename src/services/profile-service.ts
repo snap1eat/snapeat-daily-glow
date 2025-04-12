@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { NutritionGoals, UserProfile } from '@/types/user';
 
@@ -43,13 +42,8 @@ export const getUserNutritionGoals = async (userId: string) => {
 
 export const updateNutritionGoals = async (
   userId: string, 
-  goals: { 
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  },
-  nutritionGoal: string
+  goals: Partial<NutritionGoals>,
+  nutritionGoal: string = 'maintain'
 ) => {
   try {
     // Check if user already has goals

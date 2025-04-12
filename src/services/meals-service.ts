@@ -69,6 +69,23 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
       console.error('Error saving meal:', mealError);
       throw mealError;
     }
+
+    // Verificar si ya hay notificación para límites excedidos hoy
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Buscar notificaciones existentes de hoy relacionadas con límites nutricionales
+    const { data: existingNotifications } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('type', 'nutrition_limit')
+      .like('sent_at', `${today}%`);
+    
+    // Si no hay notificaciones previas de hoy, entonces añadimos una si corresponde
+    if (!existingNotifications || existingNotifications.length === 0) {
+      // Aquí se añadiría código para crear notificaciones si se superan límites
+      // Este código sería llamado por otra parte de la aplicación, como Dashboard
+    }
     
     return mealData;
   } catch (error) {

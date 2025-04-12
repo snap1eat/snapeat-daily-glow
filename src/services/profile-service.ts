@@ -1,34 +1,26 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { UserProfile, NutritionGoals, UserSettings } from '@/types/user';
+import { NutritionGoals, UserProfile } from '@/types/user';
 
-export const fetchUserProfile = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-    
-  if (error) throw error;
-  return data;
-};
-
-export const updateUserProfile = async (userId: string, profile: Partial<UserProfile>) => {
+export const updateUserProfile = async (userId: string, updates: Partial<UserProfile>) => {
   const { error } = await supabase
     .from('profiles')
     .update({
-      display_name: profile.name,
-      age: profile.age,
-      gender: profile.gender,
-      weight: profile.weight,
-      height: profile.height,
-      activity_level: profile.activityLevel,
-      avatar_url: profile.avatar,
-      updated_at: new Date().toISOString(),
+      display_name: updates.name,
+      gender: updates.gender,
+      age: updates.age,
+      weight: updates.weight,
+      height: updates.height,
+      avatar_url: updates.avatar,
+      activity_level: updates.activityLevel,
+      updated_at: new Date().toISOString()
     })
     .eq('id', userId);
-    
-  if (error) throw error;
+  
+  if (error) {
+    console.error('Error updating profile:', error);
+    throw error;
+  }
 };
 
 export const getUserNutritionGoals = async (userId: string) => {
@@ -37,10 +29,11 @@ export const getUserNutritionGoals = async (userId: string) => {
       .from('user_goals')
       .select('*')
       .eq('user_id', userId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
     
-    if (error && error.code !== 'PGRST116') throw error;
-    
+    if (error) throw error;
     return data;
   } catch (error) {
     console.error('Error fetching nutrition goals:', error);
@@ -48,39 +41,53 @@ export const getUserNutritionGoals = async (userId: string) => {
   }
 };
 
-export const updateNutritionGoals = async (userId: string, goals: Partial<NutritionGoals>, nutritionGoal?: string) => {
+export const updateNutritionGoals = async (
+  userId: string, 
+  goals: { 
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  },
+  nutritionGoal: string
+) => {
   try {
-    // Check if goals already exist for user
+    // Check if user already has goals
     const { data: existingGoals } = await supabase
       .from('user_goals')
       .select('id')
       .eq('user_id', userId)
+      .limit(1)
       .maybeSingle();
     
-    const goalsData = {
-      user_id: userId,
-      calories: goals.calories,
-      protein: goals.protein,
-      carbs: goals.carbs,
-      fat: goals.fat,
-      nutrition_goal: nutritionGoal || 'maintain',
-      updated_at: new Date().toISOString()
-    };
-    
     if (existingGoals) {
-      // Update existing record
+      // Update existing goals
       const { error } = await supabase
         .from('user_goals')
-        .update(goalsData)
+        .update({
+          calories: goals.calories,
+          protein: goals.protein,
+          carbs: goals.carbs,
+          fat: goals.fat,
+          nutrition_goal: nutritionGoal,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', existingGoals.id);
-        
+      
       if (error) throw error;
     } else {
-      // Insert new record
+      // Create new goals
       const { error } = await supabase
         .from('user_goals')
-        .insert(goalsData);
-        
+        .insert({
+          user_id: userId,
+          calories: goals.calories,
+          protein: goals.protein,
+          carbs: goals.carbs,
+          fat: goals.fat,
+          nutrition_goal: nutritionGoal
+        });
+      
       if (error) throw error;
     }
   } catch (error) {
@@ -89,40 +96,34 @@ export const updateNutritionGoals = async (userId: string, goals: Partial<Nutrit
   }
 };
 
-export const getUserSettings = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('user_settings')
-    .select('*')
-    .eq('id', userId)
-    .single();
+export const createNutritionLimitNotification = async (userId: string, message: string) => {
+  try {
+    // Verificar si ya existe una notificación similar para hoy
+    const today = new Date().toISOString().split('T')[0];
     
-  if (error && error.code !== 'PGRST116') throw error;
-  return data;
-};
-
-export const updateUserSettings = async (userId: string, settings: Partial<UserSettings>, currentReminderTimes: any) => {
-  let reminderTimes = currentReminderTimes;
-  
-  if (settings.reminderTime) {
-    reminderTimes.breakfast = settings.reminderTime;
+    const { data: existingNotifications } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('type', 'nutrition_limit')
+      .like('sent_at', `${today}%`);
+    
+    // Solo crear la notificación si no hay una similar hoy
+    if (!existingNotifications || existingNotifications.length === 0) {
+      const { error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: userId,
+          title: 'Límite de nutrición',
+          message: message,
+          type: 'nutrition_limit',
+          read: false,
+          sent_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.error('Error creating notification:', error);
   }
-  
-  const reminderTimesJson = JSON.stringify(reminderTimes) as any;
-  
-  const { error } = await supabase
-    .from('user_settings')
-    .upsert({
-      id: userId,
-      sound_effects: settings.sound,
-      vibration: settings.vibration,
-      animations: settings.animations,
-      motivation_messages: settings.motivationalMessages,
-      audio_exercises: settings.audioExercises,
-      notification_reminders: true,
-      notification_news: settings.newsNotifications,
-      reminder_times: reminderTimesJson,
-      updated_at: new Date().toISOString(),
-    });
-    
-  if (error) throw error;
 };

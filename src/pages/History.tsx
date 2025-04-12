@@ -1,9 +1,11 @@
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUser } from '@/contexts/UserContext';
 import { Diamond } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
+import MealsList from '@/components/history/MealsList';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -119,9 +121,10 @@ const History = () => {
       <h1 className="text-2xl font-bold mb-6">Historial y Estadísticas</h1>
       
       <Tabs defaultValue="overview">
-        <TabsList className="grid w-full grid-cols-2 mb-4">
+        <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="overview">Resumen</TabsTrigger>
           <TabsTrigger value="details">Detalles</TabsTrigger>
+          <TabsTrigger value="meals">Comidas</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview">
@@ -269,6 +272,10 @@ const History = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="meals">
+          <MealsList />
         </TabsContent>
       </Tabs>
     </div>

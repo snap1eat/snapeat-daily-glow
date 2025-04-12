@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,6 +65,7 @@ const GoalsTab = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBasedOnO
       setLoading(true);
       const userId = await UserService.getCurrentUserId();
       
+      // Guardar en la base de datos
       await saveNutritionGoalsToDb(
         userId, 
         {
@@ -75,6 +77,7 @@ const GoalsTab = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBasedOnO
         formData.nutritionGoal
       );
       
+      // Actualizar el estado del contexto
       await updateNutritionGoals({
         calories: Number(formData.calories),
         protein: Number(formData.protein),

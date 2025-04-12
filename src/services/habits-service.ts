@@ -54,14 +54,19 @@ export const fetchUserHabits = async (userId: string): Promise<UserHabit | null>
  */
 export const saveUserHabits = async (userId: string, habits: Omit<UserHabit, 'id'>): Promise<boolean> => {
   try {
-    // Check if the user already has habits saved
-    const { data: existingHabits } = await supabase
+    // Comprobar primero si el usuario ya tiene hábitos guardados
+    const { data: existingHabits, error: queryError } = await supabase
       .from('user_habits')
       .select('id')
       .eq('user_id', userId)
       .maybeSingle();
     
-    // Map from our application format to database format
+    if (queryError) {
+      console.error('Error checking existing habits:', queryError);
+      return false;
+    }
+    
+    // Mapear desde nuestro formato de aplicación al formato de base de datos
     const habitData = {
       user_id: userId,
       alcohol_consumption: habits.alcoholConsumption,
@@ -78,13 +83,13 @@ export const saveUserHabits = async (userId: string, habits: Omit<UserHabit, 'id
     let result;
     
     if (existingHabits) {
-      // Update existing record
+      // Actualizar registro existente
       result = await supabase
         .from('user_habits')
         .update(habitData)
         .eq('id', existingHabits.id);
     } else {
-      // Insert new record
+      // Insertar nuevo registro
       result = await supabase
         .from('user_habits')
         .insert(habitData);

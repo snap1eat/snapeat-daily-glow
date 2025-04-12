@@ -310,7 +310,7 @@ const GoalsTab = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBasedOnO
       
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Mis objetivos personales</CardTitle>
+          <CardTitle>Mis objetivos peeersonales</CardTitle>
           <div className="text-sm text-muted-foreground">
             {userGoals.length} objetivos en total
           </div>

@@ -140,7 +140,7 @@ const Dashboard = () => {
 
   return (
     <div className="pt-16 pb-4">
-      <h1 className="text-2xl font-bold mb-6">Resumen Diario</h1>
+      <h1 className="text-2xl font-bold mb-6">Resumen Diariooo</h1>
       
       {/* Nutrition Progress */}
       <Card className="mb-6">

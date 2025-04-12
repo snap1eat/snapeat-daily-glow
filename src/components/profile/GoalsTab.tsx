@@ -34,6 +34,8 @@ const GoalsTab = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBasedOnO
         const userId = await UserService.getCurrentUserId();
         const userGoals = await getUserNutritionGoals(userId);
         
+        console.log("Fetched nutrition goals:", userGoals);
+        
         if (userGoals) {
           setFormData({
             calories: userGoals.calories || nutritionGoals.calories,
@@ -64,6 +66,8 @@ const GoalsTab = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBasedOnO
     try {
       setLoading(true);
       const userId = await UserService.getCurrentUserId();
+      
+      console.log("Saving nutrition goals:", formData, "with nutrition goal:", formData.nutritionGoal);
       
       // Guardar en la base de datos
       await saveNutritionGoalsToDb(

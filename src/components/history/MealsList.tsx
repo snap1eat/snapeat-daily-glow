@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { MealLog, Food } from '@/types/user';
 import { Trash2, Edit, PlusCircle, MinusCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -50,6 +49,7 @@ const MealsList = () => {
   }, [user.isAuthenticated, user.profile.id]);
 
   const formatMealDate = (dateStr: string) => {
+    // Usar el campo date en lugar de created_at
     const date = new Date(dateStr);
     return format(date, "d 'de' MMMM, yyyy", { locale: es });
   };
@@ -67,7 +67,7 @@ const MealsList = () => {
 
   const handleEditMeal = (meal: any) => {
     setEditMeal(meal);
-    setEditDate(meal.created_at.split('T')[0]);
+    setEditDate(meal.date);
     setEditType(meal.meal_type);
     setEditFoods(meal.foods || []);
     setIsDialogOpen(true);
@@ -144,7 +144,7 @@ const MealsList = () => {
           ? { 
               ...meal, 
               meal_type: editType,
-              created_at: new Date(editDate).toISOString(),
+              date: editDate,
               foods: editFoods,
               total_calories: totalCalories,
               total_protein: totalProtein,
@@ -226,7 +226,7 @@ const MealsList = () => {
                   <div>
                     <h3 className="font-medium">{translateMealType(meal.meal_type)}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {formatMealDate(meal.created_at)}
+                      {formatMealDate(meal.date)}
                     </p>
                   </div>
                   <div className="flex space-x-2">
@@ -257,15 +257,15 @@ const MealsList = () => {
                 {meal.foods && meal.foods.map((food: any, index: number) => (
                   <div key={index} className="grid grid-cols-4 gap-2 text-sm py-1 border-b last:border-0">
                     <div>{food.name}</div>
-                    <div>{food.calories} kcal</div>
-                    <div>{food.protein} g</div>
+                    <div>{food.calories.toFixed(2)} kcal</div>
+                    <div>{food.protein.toFixed(2)} g</div>
                     <div>{food.quantity}</div>
                   </div>
                 ))}
                 
                 <div className="mt-2 pt-2 border-t flex justify-between text-sm">
                   <span className="font-medium">Total:</span>
-                  <span>{meal.total_calories} kcal</span>
+                  <span>{meal.total_calories.toFixed(2)} kcal</span>
                 </div>
               </div>
             ))}

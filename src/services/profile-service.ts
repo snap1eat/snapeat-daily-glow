@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { NutritionGoals, UserProfile } from '@/types/user';
 
@@ -46,6 +47,8 @@ export const updateNutritionGoals = async (
   nutritionGoal: string = 'maintain'
 ) => {
   try {
+    console.log("Updating nutrition goals with objective:", nutritionGoal);
+    
     // Check if user already has goals
     const { data: existingGoals } = await supabase
       .from('user_goals')
@@ -104,6 +107,7 @@ export const createNutritionLimitNotification = async (userId: string, message: 
     
     // Solo crear la notificación si no hay una similar hoy
     if (!existingNotifications || existingNotifications.length === 0) {
+      console.log("Creating nutrition limit notification:", message);
       const { error } = await supabase
         .from('notifications')
         .insert({
@@ -116,6 +120,8 @@ export const createNutritionLimitNotification = async (userId: string, message: 
         });
       
       if (error) throw error;
+    } else {
+      console.log("Nutrition limit notification already exists for today, skipping");
     }
   } catch (error) {
     console.error('Error creating notification:', error);

@@ -8,14 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
-import { fetchUserHabits, saveUserHabits } from '@/services/habits-service';
+import { fetchUserHabits, saveUserHabits, UserHabit } from '@/services/habits-service';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const HabitsTab = () => {
   const { toast } = useToast();
   const { user } = useUser();
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<UserHabit, 'id'>>({
     alcoholConsumption: 'no',
     caffeine: 'moderate',
     sugarIntake: 'moderate',
@@ -36,8 +36,18 @@ const HabitsTab = () => {
       
       try {
         const habits = await fetchUserHabits(user.profile.id);
+        console.log("Fetched user habits:", habits);
         if (habits) {
-          setFormData(habits);
+          setFormData({
+            alcoholConsumption: habits.alcoholConsumption,
+            caffeine: habits.caffeine,
+            sugarIntake: habits.sugarIntake,
+            sleepHours: habits.sleepHours,
+            dietQuality: habits.dietQuality,
+            favoriteFood: habits.favoriteFood,
+            dietType: habits.dietType,
+            tobacco: habits.tobacco
+          });
         }
       } catch (error) {
         console.error('Error loading user habits:', error);
@@ -52,7 +62,7 @@ const HabitsTab = () => {
     };
     
     loadUserHabits();
-  }, [user.isAuthenticated, user.profile.id, toast]);
+  }, [user.isAuthenticated, user.profile.id]);
   
   const handleInputChange = (key: string, value: any) => {
     setFormData(prev => ({
@@ -72,6 +82,7 @@ const HabitsTab = () => {
     
     try {
       setLoading(true);
+      console.log("Saving habits:", formData);
       const success = await saveUserHabits(user.profile.id, formData);
       
       if (success) {

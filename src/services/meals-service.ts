@@ -83,8 +83,7 @@ export const saveMeal = async (userId: string, meal: MealLog) => {
     
     // Si no hay notificaciones previas de hoy, entonces añadimos una si corresponde
     if (!existingNotifications || existingNotifications.length === 0) {
-      // Aquí se añadiría código para crear notificaciones si se superan límites
-      // Este código sería llamado por otra parte de la aplicación, como Dashboard
+      // La verificación de límites nutricionales ocurre en otra parte del código
     }
     
     return mealData;
@@ -105,7 +104,7 @@ export const fetchUserMeals = async (userId: string, days = 30) => {
       .select('*')
       .eq('user_id', userId)
       .gte('date', startDateStr)
-      .order('created_at', { ascending: false });
+      .order('date', { ascending: false });
   
     if (mealsError) throw mealsError;
     
@@ -139,6 +138,7 @@ export const fetchUserMeals = async (userId: string, days = 30) => {
         id: meal.id,
         user_id: meal.user_id,
         meal_type: englishMealType,
+        date: meal.date,
         total_calories: meal.total_calories,
         total_protein: meal.total_protein,
         total_carbs: meal.total_carbs,

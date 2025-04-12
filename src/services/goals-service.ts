@@ -1,29 +1,35 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-type UserGoal = {
+// Updated to match our new database schema
+export type UserGoal = {
   id: string;
   user_id: string;
-  goal_type: string;
-  description: string;
-  target_value: number | null;
-  current_value: number | null;
-  target_date: string | null;
-  is_achieved: boolean;
-  created_at: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  nutrition_goal: string | null;
   updated_at: string;
 };
 
-export const saveUserGoal = async (userId: string, goalType: string, description: string, targetValue?: number, targetDate?: Date) => {
+export const saveUserGoal = async (userId: string, goalData: {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  nutrition_goal?: string;
+}) => {
   try {
     const { data, error } = await supabase
       .from('user_goals')
       .insert({
         user_id: userId,
-        goal_type: goalType,
-        description: description,
-        target_value: targetValue || null,
-        target_date: targetDate ? targetDate.toISOString().split('T')[0] : null
+        calories: goalData.calories,
+        protein: goalData.protein,
+        carbs: goalData.carbs,
+        fat: goalData.fat,
+        nutrition_goal: goalData.nutrition_goal || 'maintain'
       })
       .select()
       .single();
@@ -43,7 +49,7 @@ export const getUserGoals = async (userId: string) => {
       .from('user_goals')
       .select('*')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .order('updated_at', { ascending: false });
     
     if (error) throw error;
     
@@ -55,11 +61,11 @@ export const getUserGoals = async (userId: string) => {
 };
 
 export const updateUserGoal = async (goalId: string, updates: Partial<{
-  description: string;
-  target_value: number;
-  current_value: number;
-  target_date: string;
-  is_achieved: boolean;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  nutrition_goal: string;
 }>) => {
   try {
     const updateData = {

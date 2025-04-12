@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { StorageService } from '@/services/storage-service';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +15,7 @@ import {
 } from '@/types/user';
 import * as UserService from '@/services/user-service';
 import { defaultNutritionGoals, defaultProfile, defaultSettings } from '@/constants/userDefaults';
+import { getUserNutritionGoals } from '@/services/profile-service';
 
 export const useUserData = () => {
   const { toast } = useToast();
@@ -86,15 +88,18 @@ export const useUserData = () => {
           activityLevel: profileData.activity_level || defaultProfile.activityLevel,
           avatar: profileData.avatar_url || defaultProfile.avatar,
           username: profileData.display_name || defaultProfile.username,
-          healthGoals: profileData.health_goal ? [profileData.health_goal] : defaultProfile.healthGoals,
+          healthGoals: defaultProfile.healthGoals, // Use default since health_goal was removed from profiles
         };
         
-        const updatedGoals: NutritionGoals = {
-          calories: profileData.daily_calorie_goal || defaultNutritionGoals.calories,
-          protein: profileData.daily_protein_goal || defaultNutritionGoals.protein,
-          carbs: profileData.daily_carbs_goal || defaultNutritionGoals.carbs,
-          fat: profileData.daily_fats_goal || defaultNutritionGoals.fat,
-        };
+        // Fetch nutrition goals from the user_goals table
+        const nutritionGoalsData = await getUserNutritionGoals(userId);
+        
+        const updatedGoals: NutritionGoals = nutritionGoalsData ? {
+          calories: nutritionGoalsData.calories || defaultNutritionGoals.calories,
+          protein: nutritionGoalsData.protein || defaultNutritionGoals.protein,
+          carbs: nutritionGoalsData.carbs || defaultNutritionGoals.carbs,
+          fat: nutritionGoalsData.fat || defaultNutritionGoals.fat,
+        } : defaultNutritionGoals;
         
         // Fetch user settings
         const settingsData = await UserService.getUserSettings(userId);

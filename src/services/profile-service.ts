@@ -37,17 +37,11 @@ export const getUserNutritionGoals = async (userId: string) => {
       .from('user_goals')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     
     if (error && error.code !== 'PGRST116') throw error;
     
-    return data ? {
-      calories: data.calories,
-      protein: data.protein,
-      carbs: data.carbs,
-      fat: data.fat,
-      nutritionGoal: data.nutrition_goal
-    } : null;
+    return data;
   } catch (error) {
     console.error('Error fetching nutrition goals:', error);
     return null;

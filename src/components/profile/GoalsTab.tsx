@@ -40,7 +40,7 @@ const GoalsTab = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBasedOnO
             protein: userGoals.protein || nutritionGoals.protein,
             carbs: userGoals.carbs || nutritionGoals.carbs,
             fat: userGoals.fat || nutritionGoals.fat,
-            nutritionGoal: userGoals.nutritionGoal || 'maintain',
+            nutritionGoal: userGoals.nutrition_goal || 'maintain',
           });
         }
       } catch (error) {
@@ -65,6 +65,7 @@ const GoalsTab = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBasedOnO
       setLoading(true);
       const userId = await UserService.getCurrentUserId();
       
+      // Fix: use correct parameter order - first userId, then goals, then nutritionGoal
       await updateNutritionGoals(
         userId, 
         {
@@ -76,6 +77,7 @@ const GoalsTab = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBasedOnO
         formData.nutritionGoal
       );
       
+      // Update context state
       updateNutritionGoals({
         calories: Number(formData.calories),
         protein: Number(formData.protein),

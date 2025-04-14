@@ -34,11 +34,17 @@ const Dashboard = () => {
   const totalCarbs = getDailyCarbs();
   const totalFat = getDailyFat();
   
-  const [displayedExcess, setDisplayedExcess] = useState<DisplayedExcess>({
-    calories: false,
-    protein: false,
-    carbs: false,
-    fat: false,
+  const today = new Date().toISOString().split('T')[0];
+  const storageKey = `snapeat_excess_notifications_${today}`;
+  
+  const [displayedExcess, setDisplayedExcess] = useState<DisplayedExcess>(() => {
+    const saved = localStorage.getItem(storageKey);
+    return saved ? JSON.parse(saved) : {
+      calories: false,
+      protein: false,
+      carbs: false,
+      fat: false,
+    };
   });
   
   const caloriePercentage = Math.round((totalCalories / user.nutritionGoals.calories) * 100);
@@ -119,6 +125,10 @@ const Dashboard = () => {
     
     return "¡Vas por buen camino! Sigue manteniendo este equilibrio nutricional.";
   };
+  
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(displayedExcess));
+  }, [displayedExcess, storageKey]);
   
   useEffect(() => {
     if (!hasExcess) return;

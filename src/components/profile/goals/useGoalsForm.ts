@@ -81,7 +81,8 @@ const useGoalsForm = ({ nutritionGoals, updateNutritionGoals, calculateGoalsBase
         calories: Number(formData.calories),
         protein: Number(formData.protein),
         carbs: Number(formData.carbs),
-        fat: Number(formData.fat)
+        fat: Number(formData.fat),
+        nutritionGoal: formData.nutritionGoal // Asegurarnos de actualizar también el nutritionGoal en el contexto
       });
       
       toast({

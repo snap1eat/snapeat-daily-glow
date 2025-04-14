@@ -60,7 +60,7 @@ export const useProfileManagement = (
       
       const userId = await UserService.getCurrentUserId();
       
-      const nutritionGoal = 'maintain';
+      const nutritionGoal = goals.nutritionGoal || user.nutritionGoals.nutritionGoal || 'maintain';
       await UserService.updateNutritionGoals(userId, goals, nutritionGoal);
       
       setUser(prev => ({
@@ -71,7 +71,7 @@ export const useProfileManagement = (
         },
       }));
       
-      console.log("Nutrition goals updated successfully");
+      console.log("Nutrition goals updated successfully with goal:", nutritionGoal);
     } catch (error) {
       console.error("Error updating nutrition goals:", error);
       toast({

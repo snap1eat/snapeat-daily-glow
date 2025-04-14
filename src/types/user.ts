@@ -16,6 +16,7 @@ export interface NutritionGoals {
   protein: number;
   carbs: number;
   fat: number;
+  nutritionGoal?: string; // Añadimos el nutritionGoal como opcional
 }
 
 export interface Food {

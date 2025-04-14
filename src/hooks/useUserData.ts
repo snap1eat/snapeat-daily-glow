@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { StorageService } from '@/services/storage-service';
 import { supabase } from '@/integrations/supabase/client';
@@ -99,7 +98,11 @@ export const useUserData = () => {
           protein: nutritionGoalsData.protein || defaultNutritionGoals.protein,
           carbs: nutritionGoalsData.carbs || defaultNutritionGoals.carbs,
           fat: nutritionGoalsData.fat || defaultNutritionGoals.fat,
-        } : defaultNutritionGoals;
+          nutritionGoal: nutritionGoalsData.nutrition_goal || 'maintain', // Guardar el nutrition_goal
+        } : {
+          ...defaultNutritionGoals,
+          nutritionGoal: 'maintain'
+        };
         
         // Fetch user settings
         const settingsData = await UserService.getUserSettings(userId);

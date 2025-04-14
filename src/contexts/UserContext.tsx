@@ -95,7 +95,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       
       const userId = await UserService.getCurrentUserId();
       
-      const nutritionGoal = user.dailyLogs[0]?.nutritionGoal || 'maintain';
+      const nutritionGoal = 'maintain';
       await UserService.updateNutritionGoals(userId, goals, nutritionGoal);
       
       setUser(prev => ({

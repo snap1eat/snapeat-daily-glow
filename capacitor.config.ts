@@ -2,11 +2,14 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.911b1f1327694ee4a991f0d79588fffb',
+  // Cambia "appId" para que no de error al compilar
+  appId: 'app.lovable.snapEatDailyGlow',
   appName: 'snapeat-daily-glow',
   webDir: 'dist',
   server: {
-    url: 'https://911b1f13-2769-4ee4-a991-f0d79588fffb.lovableproject.com?forceHideBadge=true',
+    // url: 'https://911b1f13-2769-4ee4-a991-f0d79588fffb.lovableproject.com?forceHideBadge=true',
+    // Cambiar por URL con IP local
+    url: 'http://192.168.1.8:8080',
     cleartext: true
   },
   plugins: {
